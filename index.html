@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>Note Link [v2.5 Final]</title>
+  <title>Note Link [v2.6 Final]</title>
   <style>
     :root {
       --bg-deep: #10141a; --bg-main: #181d23; --bg-light: #2a313a;
@@ -40,10 +40,10 @@
     .icon-btn { padding: 0; width: 32px; }
     .icon-btn svg { width: 18px; height: 18px; }
 
-    .main-content { position: fixed; top: var(--topbar-height); right: 0; bottom: 0; transition: left 0.3s ease-in-out; }
+    .main-content { position: fixed; top: var(--topbar-height); right: 0; bottom: 0; }
     .canvas-viewport {
       position: absolute; inset: 0; transform-origin: 0 0;
-      background-color: var(--bg-main); /* ノートエリアを明確化 */
+      background-color: var(--bg-main);
       box-shadow: inset 0 0 0 1px var(--border-color);
     }
     .app-canvas { position: absolute; inset: 0; }
@@ -55,12 +55,7 @@
 
     @media (min-width: 1024px) {
       .main-content { left: var(--side-panel-collapsed-w); }
-      .side-panel {
-        position: fixed; top: var(--topbar-height); left: 0; bottom: 0; z-index: 50;
-        width: var(--side-panel-collapsed-w); background-color: var(--bg-main);
-        border-right: 1px solid var(--border-color); display: flex;
-        transition: width 0.3s ease-in-out;
-      }
+      .side-panel { position: fixed; top: var(--topbar-height); left: 0; bottom: 0; z-index: 50; width: var(--side-panel-collapsed-w); background-color: var(--bg-main); border-right: 1px solid var(--border-color); display: flex; transition: width 0.3s ease-in-out; }
       body[data-panel-expanded="true"] .side-panel { width: var(--side-panel-expanded-w); }
       .side-panel__tools { width: var(--side-panel-collapsed-w); padding: 8px 0; display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; }
       .tool-btn { width: 40px; height: 40px; display: grid; place-items: center; border: none; background-color: transparent; border-radius: 8px; color: var(--ink-dim); cursor: pointer; position: relative; transition: background-color 0.2s, color 0.2s; }
@@ -209,7 +204,7 @@
       if (key === 'grid') this.drawGrid();
     },
     updateUI() {
-      this.dom.body.dataset.panelExpanded = this.state.desktopPanelExpanded;
+      document.body.dataset.panelExpanded = this.state.desktopPanelExpanded;
       document.querySelectorAll('[data-tool]').forEach(btn => btn.dataset.active = (btn.dataset.tool === this.state.tool));
       if (this.dom.zoomResetBtn) this.dom.zoomResetBtn.textContent = `${Math.round(this.state.zoom * 100)}%`;
       if (window.innerWidth > 1023) this.updateDesktopSettings();
@@ -252,7 +247,11 @@
     resizeCanvas() {
       this.state.dpr = window.devicePixelRatio || 1;
       const rect = this.dom.canvases.paint.getBoundingClientRect();
-      Object.values(this.dom.canvases).forEach(canvas => { canvas.width = rect.width * this.state.dpr; canvas.height = rect.height * this.state.dpr; });
+      [this.dom.canvases.grid, this.dom.canvases.paint].forEach(canvas => {
+        canvas.width = rect.width * this.state.dpr;
+        canvas.height = rect.height * this.state.dpr;
+      });
+      Object.values(this.dom.ctx).forEach(ctx => ctx.scale(this.state.dpr, this.state.dpr));
       this.drawGrid(); this.redrawPaintCanvas();
     },
     applyViewport() { this.dom.viewport.style.transform = `translate(${this.state.pan.x}px, ${this.state.pan.y}px) scale(${this.state.zoom})`; },
@@ -282,9 +281,7 @@
       this.state.isDrawing = true; this.state.currentStroke = [p];
       if (this.state.tool === 'pan') { this.state.isPanning = true; return; }
       this.saveHistory();
-      if (['pen', 'marker', 'eraser'].includes(this.state.tool)) {
-        this.prepareContext(); this.drawStroke([p]);
-      }
+      if (['pen', 'marker', 'eraser'].includes(this.state.tool)) { this.prepareContext(); this.drawStroke([p]); }
     },
     onPointerMove(e) {
       if (this.state.pointers.length === 0) return;
@@ -316,10 +313,10 @@
     getPointerCenter() { const [p1, p2] = this.state.pointers; return { x: (p1.clientX + p2.clientX) / 2, y: (p1.clientY + p2.clientY) / 2 }; },
     drawStroke(points) {
       if (points.length === 0 || this.state.currentStroke.length === 0) return;
-      const ctx = this.dom.ctx.paint; const dpr = this.state.dpr;
+      const ctx = this.dom.ctx.paint;
       ctx.beginPath();
-      ctx.moveTo(this.state.currentStroke.at(-1).x * dpr, this.state.currentStroke.at(-1).y * dpr);
-      for (const p of points) { ctx.lineTo(p.x * dpr, p.y * dpr); }
+      ctx.moveTo(this.state.currentStroke.at(-1).x, this.state.currentStroke.at(-1).y);
+      for (const p of points) { ctx.lineTo(p.x, p.y); }
       ctx.stroke();
       this.state.currentStroke.push(...points);
     },
@@ -327,12 +324,12 @@
       const ctx = this.dom.ctx.paint; const s = this.getCurrentSettings();
       ctx.globalCompositeOperation = this.state.tool === 'eraser' ? 'destination-out' : 'source-over';
       ctx.strokeStyle = s.color || '#000000';
-      ctx.lineWidth = s.size * this.state.dpr;
+      ctx.lineWidth = s.size;
       ctx.lineCap = s.lineCap || 'round';
       ctx.globalAlpha = (s.opacity || 100) / 100;
     },
     getCurrentSettings() { return this.state.settings[this.state.tool] || {}; },
-    drawGrid() { const { ctx, dpr } = { ctx: this.dom.ctx.grid, dpr: this.state.dpr }; const { width, height } = this.dom.canvases.grid; ctx.clearRect(0, 0, width, height); if (this.state.settings.grid !== 'true') return; const step = 20 * dpr; ctx.strokeStyle = "rgba(156, 167, 181, 0.2)"; ctx.lineWidth = 1; for (let x = 0.5; x < width; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); } for (let y = 0.5; y < height; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); } },
+    drawGrid() { const { ctx, dpr } = { ctx: this.dom.ctx.grid, dpr: this.state.dpr }; const { width, height } = this.dom.canvases.grid; ctx.clearRect(0, 0, width, height); if (this.state.settings.grid !== 'true') return; const step = 20; ctx.save(); ctx.scale(dpr,dpr); ctx.strokeStyle = "rgba(156, 167, 181, 0.2)"; ctx.lineWidth = 1/dpr; for (let x = 0.5; x < width/dpr; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height/dpr); ctx.stroke(); } for (let y = 0.5; y < height/dpr; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width/dpr, y); ctx.stroke(); } ctx.restore(); },
     saveHistory() { const { width, height } = this.dom.canvases.paint; if (width > 0 && height > 0) { this.state.history.push(this.dom.ctx.paint.getImageData(0, 0, width, height)); if (this.state.history.length > 50) this.state.history.shift(); this.state.redoStack = []; } },
     undo() { if (this.state.history.length === 0) return; const { width, height } = this.dom.canvases.paint; this.state.redoStack.push(this.dom.ctx.paint.getImageData(0, 0, width, height)); this.dom.ctx.paint.putImageData(this.state.history.pop(), 0, 0); },
     redo() { if (this.state.redoStack.length === 0) return; const { width, height } = this.dom.canvases.paint; this.state.history.push(this.dom.ctx.paint.getImageData(0, 0, width, height)); this.dom.ctx.paint.putImageData(this.state.redoStack.pop(), 0, 0); },
