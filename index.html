@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>Note Link [v3.0 Rebuild]</title>
+  <title>Note Link [v3.1 Fix]</title>
   <style>
     :root {
       --bg-deep: #2c2c2c; --bg-main: #f0f0f0; --bg-light: #ffffff;
@@ -109,25 +109,24 @@
         <button class="tool-btn" data-tool="marker" title="マーカー"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m13.5 6.5 4 4"/><path d="m21.5 14.5-9-9 4-4 9 9-4 4Z"/><path d="m14.5 21.5-9-9 4-4 9 9-4 4Z"/><path d="M5.5 12.5 3 15l-1.5 6.5 6.5-1.5 2.5-2.5"/></svg></button>
         <button class="tool-btn" data-tool="eraser" title="消しゴム"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 12 5 5"/></svg></button>
         <div class="toolbar-separator"></div>
-        <button class="tool-btn" data-tool="pan" title="移動"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15.5A2.5 2.5 0 0 0 6.5 18H18a2.5 2.5 0 0 0 2.5-2.5V12A2.5 2.5 0 0 0 18 9.5h-self.26a2.5 2.5 0 0 1-2.47-1.8L12 6.5V2.5"/><path d="m18 15-4-4"/><path d="m14 15-4-4"/></svg></button>
+        <button class="tool-btn" data-tool="pan" title="移動"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15.5A2.5 2.5 0 0 0 6.5 18H18a2.5 2.5 0 0 0 2.5-2.5V12A2.5 2.5 0 0 0 18 9.5h-3.26a2.5 2.5 0 0 1-2.47-1.8L12 6.5V2.5"/><path d="m18 15-4-4"/><path d="m14 15-4-4"/></svg></button>
       </div>
       <div class="side-panel__settings">
         <div class="settings-group" data-binding="pen marker"><div class="settings-group-title">ブラシ設定</div><div class="setting-row"><label>カラー</label><input type="color" data-setting="color" title="色の選択"></div><div class="setting-row"><label>サイズ</label><input type="range" min="1" max="100" data-setting="size" title="ブラシサイズ"><span class="value-label" data-value-for="size"></span></div><div class="setting-row" data-binding="marker"><label>不透明度</label><input type="range" min="5" max="100" step="5" data-setting="opacity" title="不透明度"><span class="value-label" data-value-for="opacity"></span></div><div class="setting-row"><label>線端</label><div class="btn-group" data-setting="lineCap"><button data-value="butt" title="角型">角</button><button data-value="round" title="丸型">丸</button></div></div></div>
         <div class="settings-group" data-binding="eraser"><div class="settings-group-title">消しゴム設定</div><div class="setting-row"><label>サイズ</label><input type="range" min="2" max="200" data-setting="size" title="消しゴムサイズ"><span class="value-label" data-value-for="size"></span></div></div>
       </div>
     </aside>
-    <div class="mobile-ui"><div class="mobile-settings-popup"></div><div class="mobile-toolbar"><button class="mobile-tool-btn" data-tool="pen" title="ペン"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><button class="mobile-tool-btn" data-tool="eraser" title="消しゴム"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 12 5 5"/></svg></button><button class="mobile-tool-btn" data-tool="pan" title="移動"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15.5A2.5 2.5 0 0 0 6.5 18H18a2.5 2.5 0 0 0 2.5-2.5V12A2.5 2.5 0 0 0 18 9.5h-self.26a2.5 2.5 0 0 1-2.47-1.8L12 6.5V2.5"/><path d="m18 15-4-4"/><path d="m14 15-4-4"/></svg></button></div></div>
+    <div class="mobile-ui"><div class="mobile-settings-popup"></div><div class="mobile-toolbar"><button class="mobile-tool-btn" data-tool="pen" title="ペン"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><button class="mobile-tool-btn" data-tool="eraser" title="消しゴム"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 12 5 5"/></svg></button><button class="mobile-tool-btn" data-tool="pan" title="移動"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15.5A2.5 2.5 0 0 0 6.5 18H18a2.5 2.5 0 0 0 2.5-2.5V12A2.5 2.5 0 0 0 18 9.5h-3.26a2.5 2.5 0 0 1-2.47-1.8L12 6.5V2.5"/><path d="m18 15-4-4"/><path d="m14 15-4-4"/></svg></button></div></div>
   </div>
 <script type="module">
   const app = {
-    VERSION: 'v3.0',
+    VERSION: 'v3.1',
     dom: {},
     state: {
       tool: 'pen', zoom: 1, pan: { x: 0, y: 0 }, dpr: 1,
       isDrawing: false, isPanning: false,
-      pointers: [], lastDist: 0,
-      history: [], redoStack: [],
-      currentStroke: null,
+      pointers: [], lastDist: 0, lastPanPoint: null,
+      history: [], redoStack: [], currentStroke: null,
       settings: {
         pen: { color: '#1a1a1a', size: 5, opacity: 1, lineCap: 'round' },
         marker: { color: '#007aff', size: 25, opacity: 0.4, lineCap: 'butt' },
@@ -140,8 +139,11 @@
       marker: `<div class="setting-row"><label>サイズ</label><input type="range" min="10" max="100" data-setting="size" title="マーカーサイズ"><span class="value-label" data-value-for="size"></span></div><div class="setting-row"><label>不透明度</label><input type="range" min="10" max="80" step="5" data-setting="opacity"><span class="value-label" data-value-for="opacity"></span></div><div class="setting-row"><label>カラー</label><div class="color-swatches" data-setting="color" title="色の選択"><div class="color-swatch" data-value="#007aff" style="background: #007aff"></div><div class="color-swatch" data-value="#1a1a1a" style="background: #1a1a1a"></div><div class="color-swatch" data-value="#ff3b30" style="background: #ff3b30"></div><div class="color-swatch" data-value="#ff9500" style="background: #ff9500"></div><div class="color-swatch" data-value="#34c759" style="background: #34c759"></div></div></div>`,
       eraser: `<div class="setting-row"><label>サイズ</label><input type="range" min="2" max="200" data-setting="size" title="消しゴムサイズ"><span class="value-label" data-value-for="size"></span></div>`,
     },
+
     init() { this.cacheDom(); this.addEventListeners(); this.setupCanvas(); this.setActiveTool('pen'); this.updateUI(); this.dom.title.textContent = `Note Link ${this.VERSION}`; },
+    
     cacheDom() { this.dom = { body: document.body, canvasContainer: document.getElementById('canvas-container'), title: document.getElementById('app-title'), canvas: document.getElementById('paint-canvas'), ctx: document.getElementById('paint-canvas').getContext('2d'), sidePanel: document.querySelector('.side-panel'), mobileToolbar: document.querySelector('.mobile-toolbar'), mobileSettingsPopup: document.querySelector('.mobile-settings-popup'), zoomResetBtn: document.querySelector('[data-action="zoom-reset"]'), }; },
+    
     addEventListeners() {
       window.addEventListener('resize', () => this.setupCanvas());
       const canvas = this.dom.canvas;
@@ -159,6 +161,7 @@
       });
       document.body.addEventListener('input', e => this.updateSettingFromElement(e.target.closest('[data-setting]')));
     },
+    
     handleAction(element) {
       const action = element.dataset.action;
       const center = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
@@ -171,8 +174,11 @@
         case 'save-png': this.saveAsPNG(); break; case 'print': window.print(); break;
       }
     },
+    
     handleToolClick(element) { const tool = element.dataset.tool; if (window.innerWidth <= 1023) { if (this.state.tool === tool && this.mobileTemplates[tool]) { this.toggleMobileSettings(); } else { this.setActiveTool(tool); this.toggleMobileSettings(!!this.mobileTemplates[tool]); } } else { this.setActiveTool(tool); } },
+    
     setActiveTool(tool) { this.state.tool = tool; document.body.dataset.tool = tool; this.updateUI(); },
+    
     updateSettingFromElement(element) {
       if (!element) return;
       let key, value;
@@ -184,6 +190,7 @@
       if (this.state.settings[tool]) this.state.settings[tool][key] = value;
       this.updateUI();
     },
+    
     updateUI() {
       document.body.dataset.panelExpanded = this.state.desktopPanelExpanded;
       document.querySelectorAll('[data-tool]').forEach(btn => btn.dataset.active = (btn.dataset.tool === this.state.tool));
@@ -191,15 +198,18 @@
       if (window.innerWidth > 1023) this.updateDesktopSettings();
       else this.updateMobileSettings();
     },
+    
     updateDesktopSettings() {
       this.dom.sidePanel.querySelectorAll('.settings-group').forEach(group => { const binding = group.dataset.binding; group.dataset.visible = (binding === 'all' || binding.includes(this.state.tool)); });
       this.updateSettingValues(this.dom.sidePanel);
     },
+    
     updateMobileSettings() {
       const popup = this.dom.mobileSettingsPopup; const template = this.mobileTemplates[this.state.tool]; popup.innerHTML = template || '';
       if (template) this.updateSettingValues(popup);
       popup.dataset.visible = this.state.mobileSettingsOpen && !!template;
     },
+    
     updateSettingValues(container) {
       const settings = this.getCurrentSettings();
       container.querySelectorAll('[data-setting]').forEach(el => {
@@ -216,8 +226,10 @@
         label.textContent = value + (label.dataset.valueFor === 'opacity' ? '%' : '');
       });
     },
+
     toggleDesktopPanel() { this.state.desktopPanelExpanded = !this.state.desktopPanelExpanded; this.updateUI(); },
     toggleMobileSettings(force) { this.state.mobileSettingsOpen = force !== undefined ? force : !this.state.mobileSettingsOpen; this.updateUI(); },
+    
     setupCanvas() {
       this.state.dpr = window.devicePixelRatio || 1;
       const rect = this.dom.canvasContainer.getBoundingClientRect();
@@ -225,79 +237,103 @@
       this.dom.canvas.height = rect.height * this.state.dpr;
       this.redrawAll();
     },
+    
     getCanvasCoordinates(pointerEvent) {
       const rect = this.dom.canvas.getBoundingClientRect();
-      const x = (pointerEvent.clientX - rect.left);
-      const y = (pointerEvent.clientY - rect.top);
+      const x = pointerEvent.clientX - rect.left;
+      const y = pointerEvent.clientY - rect.top;
       return {
         x: (x / this.state.zoom) - this.state.pan.x,
         y: (y / this.state.zoom) - this.state.pan.y
       };
     },
+    
     onPointerDown(e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       e.preventDefault(); this.dom.canvas.setPointerCapture(e.pointerId);
       this.state.pointers.push(e);
       if (this.state.pointers.length > 1) { this.state.isPanning = true; this.state.lastDist = this.getPointerDistance(); return; }
+      
       const p = this.getCanvasCoordinates(e);
       if (this.state.tool === 'pan') { this.state.isPanning = true; this.state.lastPanPoint = p; return; }
+      
       this.state.isDrawing = true;
       this.state.currentStroke = { ...this.getCurrentSettings(), tool: this.state.tool, points: [p] };
     },
+    
     onPointerMove(e) {
       if (this.state.pointers.length === 0) return;
       const pointerIndex = this.state.pointers.findIndex(p => p.pointerId === e.pointerId);
       if (pointerIndex < 0) return; this.state.pointers[pointerIndex] = e;
+      
       if (this.state.pointers.length > 1) {
         const dist = this.getPointerDistance();
         if (this.state.lastDist > 0) this.zoomAt(this.getPointerCenter().x, this.getPointerCenter().y, dist / this.state.lastDist);
         this.state.lastDist = dist;
-      } else if (this.state.isDrawing || this.state.isPanning) {
+      } else if (this.state.isPanning) {
         const p = this.getCanvasCoordinates(e);
-        if (this.state.isPanning) {
-          this.state.pan.x += (p.x - this.state.lastPanPoint.x);
-          this.state.pan.y += (p.y - this.state.lastPanPoint.y);
-          this.redrawAll();
-        } else if (this.state.isDrawing) {
-          this.state.currentStroke.points.push(p);
-          this.redrawAll();
-        }
+        this.state.pan.x += p.x - this.state.lastPanPoint.x;
+        this.state.pan.y += p.y - this.state.lastPanPoint.y;
+        this.redrawAll();
+      } else if (this.state.isDrawing) {
+        this.state.currentStroke.points.push(this.getCanvasCoordinates(e));
+        this.redrawAll();
       }
     },
+    
     onPointerUp(e) {
       this.dom.canvas.releasePointerCapture(e.pointerId);
       this.state.pointers = this.state.pointers.filter(p => p.pointerId !== e.pointerId);
-      if (this.state.isDrawing && this.state.currentStroke.points.length > 0) { this.state.history.push(this.state.currentStroke); this.state.redoStack = []; }
-      if (this.state.pointers.length === 0) { this.state.isDrawing = false; this.state.isPanning = false; this.state.currentStroke = null; }
-      else if (this.state.pointers.length < 2) { this.state.isPanning = false; this.state.lastDist = 0; }
+      if (this.state.isDrawing && this.state.currentStroke?.points.length > 1) {
+        this.state.history.push(this.state.currentStroke);
+        this.state.redoStack = [];
+      }
+      if (this.state.pointers.length === 0) {
+        this.state.isDrawing = false;
+        this.state.isPanning = false;
+        this.state.currentStroke = null;
+      } else if (this.state.pointers.length < 2) {
+        this.state.isPanning = false;
+        this.state.lastDist = 0;
+      }
     },
+    
     getPointerDistance() { const [p1, p2] = this.state.pointers; return Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY); },
     getPointerCenter() { const [p1, p2] = this.state.pointers; return { x: (p1.clientX + p2.clientX) / 2, y: (p1.clientY + p2.clientY) / 2 }; },
+    
     zoomAt(clientX, clientY, zoomFactor) {
-      const rect = this.dom.canvas.getBoundingClientRect();
-      const worldPos = this.getCanvasCoordinates({ clientX, clientY });
-      const newZoom = Math.max(0.1, Math.min(10, this.state.zoom * zoomFactor));
-      this.state.pan.x = (clientX - rect.left) / this.state.zoom - worldPos.x;
-      this.state.pan.y = (clientY - rect.top) / this.state.zoom - worldPos.y;
-      this.state.zoom = newZoom;
-      this.redrawAll();
+        const rect = this.dom.canvas.getBoundingClientRect();
+        const worldPos = this.getCanvasCoordinates({ clientX, clientY });
+        const newZoom = Math.max(0.1, Math.min(10, this.state.zoom * zoomFactor));
+
+        this.state.pan.x = (clientX - rect.left) / this.state.zoom - worldPos.x;
+        this.state.pan.y = (clientY - rect.top) / this.state.zoom - worldPos.y;
+        this.state.zoom = newZoom;
+        
+        this.redrawAll();
     },
+    
     redrawAll() {
       const ctx = this.dom.ctx; const { dpr, zoom, pan } = this.state;
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, this.dom.canvas.width, this.dom.canvas.height);
-      ctx.translate(pan.x * dpr, pan.y * dpr);
-      ctx.scale(zoom * dpr, zoom * dpr);
+      ctx.scale(dpr, dpr);
+      ctx.translate(pan.x, pan.y);
+      ctx.scale(zoom, zoom);
+      
       for (const stroke of this.state.history) { this.drawStroke(ctx, stroke); }
       if (this.state.isDrawing && this.state.currentStroke) { this.drawStroke(ctx, this.state.currentStroke); }
+      
       ctx.restore();
       this.updateUI();
     },
+    
     drawStroke(ctx, stroke) {
+      if (stroke.points.length < 1) return;
       ctx.beginPath();
       ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.size;
+      ctx.lineWidth = stroke.size / this.state.zoom;
       ctx.globalAlpha = stroke.opacity;
       ctx.lineCap = stroke.lineCap;
       ctx.globalCompositeOperation = stroke.tool === 'eraser' ? 'destination-out' : 'source-over';
@@ -305,6 +341,7 @@
       for (let i = 1; i < stroke.points.length; i++) { ctx.lineTo(stroke.points[i].x, stroke.points[i].y); }
       ctx.stroke();
     },
+    
     getCurrentSettings() { return this.state.settings[this.state.tool] || {}; },
     undo() { if (this.state.history.length === 0) return; this.state.redoStack.push(this.state.history.pop()); this.redrawAll(); },
     redo() { if (this.state.redoStack.length === 0) return; this.state.history.push(this.state.redoStack.pop()); this.redrawAll(); },
