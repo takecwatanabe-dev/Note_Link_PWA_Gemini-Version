@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>Note Link [v2.6 Final]</title>
+  <title>Note Link [v2.7 Final]</title>
   <style>
     :root {
       --bg-deep: #10141a; --bg-main: #181d23; --bg-light: #2a313a;
@@ -102,7 +102,7 @@
 </head>
 <body data-panel-expanded="true">
   <div class="app-container">
-    <header class="topbar"><div class="topbar-title">Note Link</div><span class="topbar-spacer"></span><div class="topbar-group desktop-only"><button class="topbar-btn" data-action="zoom-out" title="縮小">-</button><button class="topbar-btn" data-action="zoom-reset" title="ズームをリセット">100%</button><button class="topbar-btn" data-action="zoom-in" title="拡大">+</button></div><div class="topbar-group" style="margin-left: 16px;"><button class="topbar-btn icon-btn" data-action="undo" title="元に戻す (Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button><button class="topbar-btn icon-btn" data-action="redo" title="やり直し (Ctrl+Y)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 0 9 9 9 9 0 0 0 6-2.3L21 13"/></svg></button></div><div class="topbar-group desktop-only" style="margin-left: 16px;"><button class="topbar-btn icon-btn" data-action="print" title="印刷"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><button class="topbar-btn" data-action="save-png" title="PNG形式で保存">PNG</button></div></header>
+    <header class="topbar"><div class="topbar-title" id="app-title">Note Link</div><span class="topbar-spacer"></span><div class="topbar-group desktop-only"><button class="topbar-btn" data-action="zoom-out" title="縮小">-</button><button class="topbar-btn" data-action="zoom-reset" title="ズームをリセット">100%</button><button class="topbar-btn" data-action="zoom-in" title="拡大">+</button></div><div class="topbar-group" style="margin-left: 16px;"><button class="topbar-btn icon-btn" data-action="undo" title="元に戻す (Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button><button class="topbar-btn icon-btn" data-action="redo" title="やり直し (Ctrl+Y)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 0 9 9 9 9 0 0 0 6-2.3L21 13"/></svg></button></div><div class="topbar-group desktop-only" style="margin-left: 16px;"><button class="topbar-btn icon-btn" data-action="print" title="印刷"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><button class="topbar-btn" data-action="save-png" title="PNG形式で保存">PNG</button></div></header>
     <main class="main-content"><div class="canvas-viewport" id="viewport"><canvas id="grid-canvas" class="app-canvas"></canvas><canvas id="paint-canvas" class="app-canvas"></canvas><div id="text-layer" class="app-canvas" style="pointer-events: none;"></div></div></main>
     <aside class="side-panel">
       <div class="side-panel__tools">
@@ -124,6 +124,8 @@
   </div>
 <script type="module">
   const app = {
+    // --- STATE & CONFIG ---
+    VERSION: 'v2.7',
     state: {
       tool: 'pen', zoom: 1, pan: { x: 0, y: 0 }, dpr: 1,
       isDrawing: false, isPanning: false, currentStroke: [],
@@ -142,10 +144,19 @@
       marker: `<div class="setting-row"><label>サイズ</label><input type="range" min="10" max="100" data-setting="size" title="マーカーサイズ"><span class="value-label" data-value-for="size"></span></div><div class="setting-row"><label>不透明度</label><input type="range" min="10" max="80" step="5" data-setting="opacity" title="不透明度"><span class="value-label" data-value-for="opacity"></span></div><div class="setting-row"><label>カラー</label><div class="color-swatches" data-setting="color" title="色の選択"><div class="color-swatch" data-value="#3b82f6" style="background: #3b82f6"></div><div class="color-swatch" data-value="#e8eff6" style="background: #e8eff6"></div><div class="color-swatch" data-value="#ef4444" style="background: #ef4444"></div><div class="color-swatch" data-value="#f97316" style="background: #f97316"></div><div class="color-swatch" data-value="#22c55e" style="background: #22c55e"></div></div></div>`,
       eraser: `<div class="setting-row"><label>サイズ</label><input type="range" min="2" max="200" data-setting="size" title="消しゴムサイズ"><span class="value-label" data-value-for="size"></span></div>`,
     },
-    init() { this.cacheDom(); this.addEventListeners(); this.resizeCanvas(); this.setActiveTool('pen'); this.updateUI(); },
+
+    // --- INITIALIZATION ---
+    init() {
+      this.cacheDom();
+      this.addEventListeners();
+      this.setupCanvas();
+      this.setActiveTool('pen');
+      this.updateUI();
+      this.dom.title.textContent = `Note Link ${this.VERSION}`;
+    },
     cacheDom() {
       this.dom = {
-        body: document.body, viewport: document.getElementById('viewport'), textLayer: document.getElementById('text-layer'),
+        body: document.body, viewport: document.getElementById('viewport'), textLayer: document.getElementById('text-layer'), title: document.getElementById('app-title'),
         canvases: { grid: document.getElementById('grid-canvas'), paint: document.getElementById('paint-canvas') },
         ctx: { grid: document.getElementById('grid-canvas').getContext('2d'), paint: document.getElementById('paint-canvas').getContext('2d') },
         sidePanel: document.querySelector('.side-panel'),
@@ -154,7 +165,7 @@
       };
     },
     addEventListeners() {
-      window.addEventListener('resize', () => this.resizeCanvas());
+      window.addEventListener('resize', () => this.setupCanvas());
       const canvas = this.dom.canvases.paint;
       canvas.addEventListener('pointerdown', this.onPointerDown.bind(this));
       canvas.addEventListener('pointermove', this.onPointerMove.bind(this));
@@ -170,6 +181,8 @@
       });
       document.body.addEventListener('input', e => this.updateSettingFromElement(e.target.closest('[data-setting]')));
     },
+
+    // --- EVENT & ACTION HANDLERS ---
     handleAction(element) {
       const action = element.dataset.action;
       const center = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
@@ -178,7 +191,7 @@
         case 'toggle-grid': this.toggleGrid(); break;
         case 'zoom-in': this.zoomAt(center.x, center.y, 1.25); break;
         case 'zoom-out': this.zoomAt(center.x, center.y, 0.8); break;
-        case 'zoom-reset': this.state.zoom = 1; this.state.pan = { x: 0, y: 0 }; this.applyViewport(); this.resizeCanvas(); break;
+        case 'zoom-reset': this.state.zoom = 1; this.state.pan = { x: 0, y: 0 }; this.applyViewport(); this.setupCanvas(); break;
         case 'undo': this.undo(); break; case 'redo': this.redo(); break;
         case 'save-png': this.saveAsPNG(); break; case 'print': window.print(); break;
       }
@@ -190,6 +203,8 @@
         else { this.setActiveTool(tool); this.toggleMobileSettings(!!this.mobileTemplates[tool]); }
       } else { this.setActiveTool(tool); }
     },
+
+    // --- STATE & UI MANAGEMENT ---
     setActiveTool(tool) { this.state.tool = tool; document.body.dataset.tool = tool; this.updateUI(); },
     updateSettingFromElement(element) {
       if (!element) return;
@@ -204,7 +219,7 @@
       if (key === 'grid') this.drawGrid();
     },
     updateUI() {
-      document.body.dataset.panelExpanded = this.state.desktopPanelExpanded;
+      this.dom.body.dataset.panelExpanded = this.state.desktopPanelExpanded;
       document.querySelectorAll('[data-tool]').forEach(btn => btn.dataset.active = (btn.dataset.tool === this.state.tool));
       if (this.dom.zoomResetBtn) this.dom.zoomResetBtn.textContent = `${Math.round(this.state.zoom * 100)}%`;
       if (window.innerWidth > 1023) this.updateDesktopSettings();
@@ -244,14 +259,18 @@
     toggleDesktopPanel() { this.state.desktopPanelExpanded = !this.state.desktopPanelExpanded; this.updateUI(); },
     toggleMobileSettings(force) { this.state.mobileSettingsOpen = force !== undefined ? force : !this.state.mobileSettingsOpen; this.updateUI(); },
     toggleGrid() { this.state.settings.grid = this.state.settings.grid === 'true' ? 'false' : 'true'; this.drawGrid(); this.updateUI(); },
-    resizeCanvas() {
+
+    // --- CANVAS & DRAWING ENGINE ---
+    setupCanvas() {
       this.state.dpr = window.devicePixelRatio || 1;
       const rect = this.dom.canvases.paint.getBoundingClientRect();
       [this.dom.canvases.grid, this.dom.canvases.paint].forEach(canvas => {
         canvas.width = rect.width * this.state.dpr;
         canvas.height = rect.height * this.state.dpr;
       });
-      Object.values(this.dom.ctx).forEach(ctx => ctx.scale(this.state.dpr, this.state.dpr));
+      Object.values(this.dom.ctx).forEach(ctx => {
+        ctx.setTransform(this.state.dpr, 0, 0, this.state.dpr, 0, 0);
+      });
       this.drawGrid(); this.redrawPaintCanvas();
     },
     applyViewport() { this.dom.viewport.style.transform = `translate(${this.state.pan.x}px, ${this.state.pan.y}px) scale(${this.state.zoom})`; },
@@ -275,11 +294,14 @@
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       e.preventDefault(); this.dom.canvases.paint.setPointerCapture(e.pointerId);
       this.state.pointers.push(e);
-      if (this.state.pointers.length > 1) { this.state.isPanning = true; this.state.lastDist = this.getPointerDistance(); return; }
+      if (this.state.pointers.length > 1) { this.state.isDrawing = false; this.state.isPanning = true; this.state.lastDist = this.getPointerDistance(); return; }
+      
       const p = this.getCanvasCoordinates(e);
       if (this.state.tool === 'text') { this.addTextNode(p); return; }
+      
       this.state.isDrawing = true; this.state.currentStroke = [p];
       if (this.state.tool === 'pan') { this.state.isPanning = true; return; }
+      
       this.saveHistory();
       if (['pen', 'marker', 'eraser'].includes(this.state.tool)) { this.prepareContext(); this.drawStroke([p]); }
     },
@@ -287,6 +309,7 @@
       if (this.state.pointers.length === 0) return;
       const pointerIndex = this.state.pointers.findIndex(p => p.pointerId === e.pointerId);
       if (pointerIndex < 0) return; this.state.pointers[pointerIndex] = e;
+      
       if (this.state.pointers.length > 1) {
         const dist = this.getPointerDistance();
         if (this.state.lastDist > 0) this.zoomAt(this.getPointerCenter().x, this.getPointerCenter().y, dist / this.state.lastDist);
@@ -329,7 +352,7 @@
       ctx.globalAlpha = (s.opacity || 100) / 100;
     },
     getCurrentSettings() { return this.state.settings[this.state.tool] || {}; },
-    drawGrid() { const { ctx, dpr } = { ctx: this.dom.ctx.grid, dpr: this.state.dpr }; const { width, height } = this.dom.canvases.grid; ctx.clearRect(0, 0, width, height); if (this.state.settings.grid !== 'true') return; const step = 20; ctx.save(); ctx.scale(dpr,dpr); ctx.strokeStyle = "rgba(156, 167, 181, 0.2)"; ctx.lineWidth = 1/dpr; for (let x = 0.5; x < width/dpr; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height/dpr); ctx.stroke(); } for (let y = 0.5; y < height/dpr; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width/dpr, y); ctx.stroke(); } ctx.restore(); },
+    drawGrid() { const { ctx, dpr } = { ctx: this.dom.ctx.grid, dpr: this.state.dpr }; const { width, height } = this.dom.canvases.grid; ctx.clearRect(0, 0, width, height); if (this.state.settings.grid !== 'true') return; const step = 20; ctx.save(); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.strokeStyle = "rgba(156, 167, 181, 0.2)"; ctx.lineWidth = 1 / dpr; for (let x = 0.5; x < width/dpr; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height/dpr); ctx.stroke(); } for (let y = 0.5; y < height/dpr; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width/dpr, y); ctx.stroke(); } ctx.restore(); },
     saveHistory() { const { width, height } = this.dom.canvases.paint; if (width > 0 && height > 0) { this.state.history.push(this.dom.ctx.paint.getImageData(0, 0, width, height)); if (this.state.history.length > 50) this.state.history.shift(); this.state.redoStack = []; } },
     undo() { if (this.state.history.length === 0) return; const { width, height } = this.dom.canvases.paint; this.state.redoStack.push(this.dom.ctx.paint.getImageData(0, 0, width, height)); this.dom.ctx.paint.putImageData(this.state.history.pop(), 0, 0); },
     redo() { if (this.state.redoStack.length === 0) return; const { width, height } = this.dom.canvases.paint; this.state.history.push(this.dom.ctx.paint.getImageData(0, 0, width, height)); this.dom.ctx.paint.putImageData(this.state.redoStack.pop(), 0, 0); },
