@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>Note Link [v3.2 Debug]</title>
+  <title>Note Link [v4.0 Stable]</title>
   <style>
     :root {
       --bg-deep: #2c2c2c; --bg-main: #f0f0f0; --bg-light: #ffffff;
@@ -32,17 +32,11 @@
     .topbar-btn { display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 12px; background-color: #e5e5ea; border: 1px solid var(--border-color); border-radius: 6px; color: var(--ink-main); font-size: 14px; cursor: pointer; white-space: nowrap; }
     .icon-btn { padding: 0; width: 32px; } .icon-btn svg { width: 18px; height: 18px; }
 
-    .main-content { position: fixed; top: var(--topbar-height); right: 0; bottom: 0; left: 0; }
-    .canvas-viewport { position: absolute; inset: 0; transform-origin: 0 0; background-color: var(--bg-main); }
-    .app-canvas { position: absolute; inset: 0; }
+    .main-content { position: fixed; top: var(--topbar-height); right: 0; bottom: 0; left: 0; padding: 20px; display: grid; place-items: center; }
+    .canvas-container { width: 100%; height: 100%; box-shadow: 0 4px 16px rgba(0,0,0,0.2); position: relative; }
+    .app-canvas { position: absolute; inset: 0; background-color: var(--bg-main); }
     #paint-canvas { touch-action: none; cursor: crosshair; }
     body[data-tool="pan"] #paint-canvas { cursor: grab; }
-
-    #debug-overlay {
-        position: fixed; top: 50px; left: 60px; background: rgba(0,0,0,0.7);
-        color: white; padding: 8px; font-family: monospace; font-size: 12px;
-        border-radius: 4px; z-index: 9999; pointer-events: none; line-height: 1.5;
-    }
 
     @media (min-width: 1024px) {
       .main-content { left: var(--side-panel-collapsed-w); }
@@ -63,22 +57,26 @@
       .mobile-ui { display: none; }
     }
     @media (max-width: 1023px) {
-        /* (モバイルUIは一時的に省略し、デスクトップでの動作安定を優先) */
-        .side-panel, .mobile-ui { display: none; }
-        .main-content { left: 0; }
-        #debug-overlay { left: 10px; }
+        .main-content { left: 0; padding: 0; }
+        .canvas-container { box-shadow: none; }
+        .side-panel, .topbar-group.desktop-only { display: none; }
+        .mobile-ui { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background-color: var(--bg-light); border-top: 1px solid var(--border-color); padding-bottom: env(safe-area-inset-bottom); }
+        .mobile-toolbar { height: var(--toolbar-height-mobile); display: flex; justify-content: space-around; align-items: center; }
+        .mobile-tool-btn { flex: 1; height: 100%; display: grid; place-items: center; background: none; border: none; color: var(--ink-dim); }
+        .mobile-tool-btn[data-active="true"] { color: var(--accent-blue); }
+        .mobile-tool-btn svg { width: 24px; height: 24px; }
     }
   </style>
 </head>
 <body data-panel-expanded="true">
   <div class="app-container">
     <header class="topbar"><div class="topbar-title" id="app-title">Note Link</div><span class="topbar-spacer"></span><div class="topbar-group"><button class="topbar-btn icon-btn" data-action="undo" title="元に戻す"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button><button class="topbar-btn icon-btn" data-action="redo" title="やり直し"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 0 9 9 9 9 0 0 0 6-2.3L21 13"/></svg></button></div></header>
-    <main class="main-content"><div class="canvas-viewport" id="viewport"><canvas id="paint-canvas" class="app-canvas"></canvas></div></main>
+    <main class="main-content"><div class="canvas-container" id="canvas-container"><canvas id="paint-canvas" class="app-canvas"></canvas></div></main>
     <aside class="side-panel">
       <div class="side-panel__tools">
+        <button class="tool-btn" data-action="toggle-panel" title="設定パネルを開閉"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg></button><div class="toolbar-separator"></div>
         <button class="tool-btn" data-tool="pen" title="ペン"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
         <button class="tool-btn" data-tool="eraser" title="消しゴム"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 12 5 5"/></svg></button>
-        <button class="tool-btn" data-tool="pan" title="移動"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15.5A2.5 2.5 0 0 0 6.5 18H18a2.5 2.5 0 0 0 2.5-2.5V12A2.5 2.5 0 0 0 18 9.5h-3.26a2.5 2.5 0 0 1-2.47-1.8L12 6.5V2.5"/><path d="m18 15-4-4"/><path d="m14 15-4-4"/></svg></button>
       </div>
       <div class="side-panel__settings">
         <div class="settings-group" data-binding="pen eraser">
@@ -86,115 +84,163 @@
         </div>
       </div>
     </aside>
-    <div id="debug-overlay"></div>
+    <div class="mobile-ui">
+        <div class="mobile-toolbar">
+            <button class="mobile-tool-btn" data-tool="pen" title="ペン"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+            <button class="mobile-tool-btn" data-tool="eraser" title="消しゴム"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 12 5 5"/></svg></button>
+        </div>
+    </div>
   </div>
 <script type="module">
   const app = {
-    VERSION: 'v3.2-debug',
+    VERSION: 'v4.0',
     dom: {},
     state: {
-      tool: 'pen', zoom: 1, pan: { x: 0, y: 0 }, dpr: 1,
-      isDrawing: false,
-      history: [], redoStack: [], currentStroke: null,
+      tool: 'pen', dpr: 1, isDrawing: false,
+      history: [], redoStack: [],
       settings: {
-        pen: { color: '#1a1a1a', size: 5, opacity: 1, lineCap: 'round' },
+        pen: { color: '#1a1a1a', size: 5, lineCap: 'round' },
         eraser: { size: 40 },
       },
+      desktopPanelExpanded: true,
     },
-    init() { this.cacheDom(); this.addEventListeners(); this.setupCanvas(); this.setActiveTool('pen'); this.updateUI(); this.dom.title.textContent = `Note Link ${this.VERSION}`; },
+    
+    init() {
+      this.cacheDom();
+      this.addEventListeners();
+      this.setupCanvas();
+      this.setActiveTool('pen');
+      this.updateUI();
+      this.dom.title.textContent = `Note Link ${this.VERSION}`;
+    },
+    
     cacheDom() {
       this.dom = {
-        body: document.body, canvas: document.getElementById('paint-canvas'), ctx: document.getElementById('paint-canvas').getContext('2d'),
-        title: document.getElementById('app-title'), sidePanel: document.querySelector('.side-panel'),
-        debug: document.getElementById('debug-overlay'),
+        body: document.body, canvasContainer: document.getElementById('canvas-container'),
+        title: document.getElementById('app-title'), canvas: document.getElementById('paint-canvas'),
+        ctx: document.getElementById('paint-canvas').getContext('2d'),
+        sidePanel: document.querySelector('.side-panel'),
       };
     },
+    
     addEventListeners() {
       window.addEventListener('resize', () => this.setupCanvas());
       const canvas = this.dom.canvas;
       canvas.addEventListener('pointerdown', this.onPointerDown.bind(this));
       canvas.addEventListener('pointermove', this.onPointerMove.bind(this));
       canvas.addEventListener('pointerup', this.onPointerUp.bind(this));
-      canvas.addEventListener('pointercancel', this.onPointerUp.bind(this));
+      canvas.addEventListener('pointerleave', this.onPointerUp.bind(this));
       document.body.addEventListener('click', e => {
-        const toolTarget = e.target.closest('[data-tool]');
-        if (toolTarget) this.setActiveTool(toolTarget.dataset.tool);
+        const target = e.target.closest('[data-tool], [data-action]');
+        if (!target) return;
+        if (target.dataset.tool) this.setActiveTool(target.dataset.tool);
+        if (target.dataset.action) this.handleAction(target.dataset.action);
       });
     },
-    setActiveTool(tool) { this.state.tool = tool; this.updateUI(); },
-    updateUI() {
-      this.dom.body.dataset.tool = this.state.tool;
-      document.querySelectorAll('[data-tool]').forEach(btn => btn.dataset.active = (btn.dataset.tool === this.state.tool));
+    
+    handleAction(action) {
+      switch (action) {
+        case 'toggle-panel': this.state.desktopPanelExpanded = !this.state.desktopPanelExpanded; this.updateUI(); break;
+        case 'undo': this.undo(); break;
+        case 'redo': this.redo(); break;
+      }
     },
+    
+    setActiveTool(tool) {
+      this.state.tool = tool;
+      this.updateUI();
+    },
+    
+    updateUI() {
+      this.dom.body.dataset.panelExpanded = this.state.desktopPanelExpanded;
+      document.querySelectorAll('[data-tool]').forEach(btn => {
+        btn.dataset.active = (btn.dataset.tool === this.state.tool);
+      });
+    },
+    
     setupCanvas() {
       this.state.dpr = window.devicePixelRatio || 1;
-      const rect = this.dom.canvas.getBoundingClientRect();
+      const rect = this.dom.canvasContainer.getBoundingClientRect();
       this.dom.canvas.width = rect.width * this.state.dpr;
       this.dom.canvas.height = rect.height * this.state.dpr;
-      const ctx = this.dom.ctx;
-      ctx.scale(this.state.dpr, this.state.dpr);
-      this.redrawAll();
+      this.dom.ctx.scale(this.state.dpr, this.state.dpr);
+      this.redrawHistory();
     },
+    
     getCanvasCoordinates(e) {
       const rect = this.dom.canvas.getBoundingClientRect();
-      const point = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      };
-      // デバッグ情報を表示
-      this.dom.debug.innerHTML = `clientX: ${e.clientX.toFixed(2)}<br>rect.left: ${rect.left.toFixed(2)}<br><b>calcX: ${point.x.toFixed(2)}</b>`;
-      return point;
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
     },
+    
     onPointerDown(e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      e.preventDefault();
       this.state.isDrawing = true;
       const p = this.getCanvasCoordinates(e);
-      this.state.currentStroke = { ...this.getCurrentSettings(), tool: this.state.tool, points: [p] };
-      this.redrawAll();
+      this.dom.ctx.beginPath();
+      this.dom.ctx.moveTo(p.x, p.y);
+      this.prepareContext();
     },
+    
     onPointerMove(e) {
       if (!this.state.isDrawing) return;
       const p = this.getCanvasCoordinates(e);
-      if (this.state.currentStroke) {
-        this.state.currentStroke.points.push(p);
-        this.redrawAll();
-      }
+      this.dom.ctx.lineTo(p.x, p.y);
+      this.dom.ctx.stroke();
     },
-    onPointerUp(e) {
-      if (this.state.isDrawing && this.state.currentStroke?.points.length > 0) {
-        this.state.history.push(this.state.currentStroke);
-      }
+    
+    onPointerUp() {
+      if (!this.state.isDrawing) return;
       this.state.isDrawing = false;
-      this.state.currentStroke = null;
+      this.dom.ctx.closePath();
+      this.saveHistory();
     },
-    redrawAll() {
+    
+    prepareContext() {
       const ctx = this.dom.ctx;
-      ctx.clearRect(0, 0, this.dom.canvas.width, this.dom.canvas.height);
-      for (const stroke of this.state.history) { this.drawStroke(ctx, stroke); }
-      if (this.state.isDrawing && this.state.currentStroke) {
-        this.drawStroke(ctx, this.state.currentStroke);
+      const settings = this.state.settings[this.state.tool] || {};
+      ctx.strokeStyle = settings.color || '#000000';
+      ctx.lineWidth = settings.size || 5;
+      ctx.lineCap = settings.lineCap || 'round';
+      ctx.lineJoin = 'round';
+      ctx.globalCompositeOperation = this.state.tool === 'eraser' ? 'destination-out' : 'source-over';
+    },
+
+    saveHistory() {
+      const { width, height } = this.dom.canvas;
+      if (width > 0 && height > 0) {
+        if (this.state.history.length > 30) this.state.history.shift();
+        this.state.history.push(this.dom.ctx.getImageData(0, 0, width, height));
+        this.state.redoStack = [];
       }
     },
-    drawStroke(ctx, stroke) {
-      if (stroke.points.length < 1) return;
-      this.prepareContext(ctx, stroke);
-      ctx.beginPath();
-      ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-      for (let i = 1; i < stroke.points.length; i++) {
-        ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+
+    redrawHistory() {
+      const lastState = this.state.history.at(-1);
+      if (lastState) {
+        this.dom.ctx.putImageData(lastState, 0, 0);
       }
-      ctx.stroke();
     },
-    prepareContext(ctx, strokeSettings) {
-      ctx.strokeStyle = strokeSettings.color;
-      ctx.lineWidth = strokeSettings.size;
-      ctx.lineCap = strokeSettings.lineCap;
-      ctx.globalAlpha = strokeSettings.opacity;
-      ctx.globalCompositeOperation = strokeSettings.tool === 'eraser' ? 'destination-out' : 'source-over';
+
+    undo() {
+      if (this.state.history.length === 0) return;
+      const { width, height } = this.dom.canvas;
+      this.state.redoStack.push(this.dom.ctx.getImageData(0, 0, width, height));
+      const lastState = this.state.history.pop();
+      if (lastState) {
+        this.dom.ctx.putImageData(lastState, 0, 0);
+      } else {
+        this.dom.ctx.clearRect(0,0,width, height);
+      }
     },
-    getCurrentSettings() { return this.state.settings[this.state.tool] || {}; },
+
+    redo() {
+      if (this.state.redoStack.length === 0) return;
+      const nextState = this.state.redoStack.pop();
+      this.state.history.push(nextState);
+      this.dom.ctx.putImageData(nextState, 0, 0);
+    },
   };
+
   document.addEventListener('DOMContentLoaded', () => app.init());
 </script>
 </body>
