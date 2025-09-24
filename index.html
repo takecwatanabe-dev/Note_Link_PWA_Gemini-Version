@@ -1,806 +1,641 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>NOTE LINK — V0.9.1-FIXED</title>
-<style>
-  :root {
-    --ink: #e6f1ff; --ink-dim: #9bd6e9; --bg: #0b1020;
-    --panel: #101827; --accent: #3f78ff; --ok: #20e3c2; --muted: #2a3550;
-    --shadow: 0 10px 24px rgba(0,0,0,.45);
-    --topbar-h: 44px; --toolbar-w: 56px;
-  }
-  *, *::before, *::after { box-sizing: border-box; }
-  html, body {
-    height: 100%; margin: 0; background: var(--bg); color: var(--ink);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-  }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Note Link [v2.0]</title>
+  <style>
+    :root {
+      --bg-deep: #10141a; --bg-main: #181d23; --bg-light: #2a313a;
+      --ink-main: #e8eff6; --ink-dim: #9ca7b5;
+      --accent-blue: #3b82f6; --accent-green: #22c55e; --accent-red: #ef4444;
+      --border-color: #3e4856;
+      --topbar-height: 48px; --toolbar-width: 52px; --settings-width: 260px;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden;
+      background-color: var(--bg-deep); color: var(--ink-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+                   Arial, "Noto Sans", sans-serif;
+    }
+    .app-container { display: flex; height: 100%; }
 
-  /* --- Layout --- */
-  .topbar {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 5000;
-    height: var(--topbar-h); display: flex; align-items: center; gap: 8px;
-    padding: 0 10px; font-size: 12px; color: #fff;
-    background: linear-gradient(0deg, rgba(42,84,255,.16), rgba(42,84,255,.16)), var(--accent);
-    border-bottom: 1px solid rgba(255,255,255,.15);
-  }
-  .topbar__spacer { flex: 1; }
-  .topbar__btn {
-    height: 28px; padding: 0 10px; border-radius: 10px; background: rgba(255,255,255,.2);
-    border: 1px solid rgba(255,255,255,.22); color: #fff; display: inline-flex;
-    align-items: center; cursor: pointer;
-  }
-  .topbar__btn:active { transform: translateY(1px); }
-  .topbar__build { opacity: .8; }
+    /* ===== Topbar ===== */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: var(--topbar-height); display: flex; align-items: center;
+      padding: 0 16px; background-color: var(--bg-main);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .topbar-title { font-weight: 600; font-size: 16px; }
+    .topbar-spacer { flex-grow: 1; }
+    .topbar-group { display: flex; align-items: center; gap: 8px; }
+    .topbar-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      height: 32px; padding: 0 12px; background-color: var(--bg-light);
+      border: 1px solid var(--border-color); border-radius: 6px;
+      color: var(--ink-dim); font-size: 14px; cursor: pointer; transition: background-color 0.2s;
+    }
+    .topbar-btn:hover { background-color: #3b4451; color: var(--ink-main); }
+    .topbar-btn svg { width: 16px; height: 16px; margin-right: 6px; }
 
-  .page-wrap { position: relative; height: 100%; padding-top: var(--topbar-h); }
-  .stage { position: absolute; inset: 0; padding-left: var(--toolbar-w); }
-  .viewport { position: absolute; inset: 0; transform-origin: 0 0; }
+    /* ===== Main Content Area ===== */
+    .main-content {
+      position: fixed; top: var(--topbar-height); left: var(--toolbar-width); right: 0; bottom: 0;
+      transition: right 0.3s ease-in-out;
+    }
+    body[data-settings-open="true"] .main-content { right: var(--settings-width); }
 
-  /* --- Sidebar (Toolbar) --- */
-  .sidebar {
-    position: fixed; z-index: 4000; left: 0; top: var(--topbar-h); bottom: 0;
-    width: var(--toolbar-w); display: flex; flex-direction: column; align-items: center;
-    background: rgba(0,0,0,.86); box-shadow: 0 0 0 1px var(--muted) inset;
-  }
-  .sidebar__rail { width: 100%; padding: 6px; display: flex; flex-direction: column; gap: 8px; }
-  .tool {
-    display: grid; place-items: center; width: 100%; height: 36px;
-    border-radius: 10px; cursor: pointer; user-select: none;
-    background: rgba(22,26,38,.75); border: 1px solid rgba(50,60,100,.6);
-    outline: 1px solid rgba(79,124,255,.35); box-shadow: 0 0 0 2px rgba(0,0,0,.12);
-  }
-  .tool:hover { outline-color: rgba(79,124,255,.5); }
-  .tool[data-active="true"] { outline: 2px solid var(--ok); }
-  .tool svg {
-    width: 18px; height: 18px; stroke: var(--ink); fill: none;
-    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none;
-  }
-  .sidebar[data-collapsed="true"] .tool:not([data-tool="toggle"]) { display: none; }
-  .tool[data-tool="toggle"] svg { transition: transform .2s; }
-  .sidebar[data-collapsed="true"] .tool[data-tool="toggle"] svg { transform: rotate(180deg); }
+    .canvas-viewport { position: absolute; inset: 0; transform-origin: 0 0; }
+    .app-canvas { position: absolute; inset: 0; }
+    #paint-canvas { touch-action: none; }
 
-  /* --- Panel --- */
-  .panel {
-    position: absolute; z-index: 4200; left: 70px; top: calc(var(--topbar-h) + 10px);
-    min-width: 280px; max-width: 320px; padding: 8px 12px 10px; border-radius: 14px;
-    background: var(--panel); border: 1px solid rgba(255,255,255,.14);
-    box-shadow: var(--shadow); user-select: none;
-    max-height: calc(100vh - var(--topbar-h) - 24px); overflow: auto;
-    display: none;
-  }
-  .panel[data-visible="true"] { display: block; }
-  .panel__handle {
-    position: sticky; top: 0; display: flex; align-items: center; gap: 8px;
-    padding: 8px 12px; margin: -8px -12px 8px; background: var(--panel);
-    border-bottom: 1px solid #ffffff14; border-radius: 14px 14px 0 0; cursor: grab;
-  }
-  .panel__title { flex: 1; font-weight: 600; font-size: 14px; text-align: left; }
-  .panel__close-btn {
-    margin-left: auto; height: 26px; padding: 0 10px; border-radius: 8px;
-    border: 1px solid #ffffff2e; background: #ffffff14; color: var(--ink);
-    font-size: 14px; cursor: pointer;
-  }
-  .panel__row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
-  .panel__row label { width: 100px; font-size: 12px; color: var(--ink-dim); }
-  .panel__row input[type="range"] { flex: 1; min-width: 120px; }
-  .panel__row button {
-    height: 26px; padding: 0 8px; border-radius: 8px; border: 1px solid #ffffff2e;
-    background: #ffffff14; color: #fff; font-size: 12px; white-space: nowrap; cursor: pointer;
-  }
-  .panel__btn-grid { display: grid; grid-template-columns: repeat(2, minmax(96px, 1fr)); gap: 6px; width: 100%; }
+    /* ===== Toolbar ===== */
+    .toolbar {
+      position: fixed; top: var(--topbar-height); left: 0; bottom: 0; z-index: 50;
+      width: var(--toolbar-width); padding: 8px 0; display: flex; flex-direction: column;
+      align-items: center; gap: 4px; background-color: var(--bg-main);
+      border-right: 1px solid var(--border-color);
+    }
+    .tool-btn {
+      width: 40px; height: 40px; display: grid; place-items: center;
+      border: none; background-color: transparent; border-radius: 8px;
+      color: var(--ink-dim); cursor: pointer; position: relative;
+      transition: background-color 0.2s, color 0.2s;
+    }
+    .tool-btn:hover { background-color: var(--bg-light); color: var(--ink-main); }
+    .tool-btn[data-active="true"] { background-color: var(--accent-blue); color: white; }
+    .tool-btn svg { width: 22px; height: 22px; pointer-events: none; }
+    .toolbar-separator {
+      height: 1px; width: 80%; background-color: var(--border-color); margin: 8px 0;
+    }
 
-  /* --- Canvas Layers --- */
-  .canvas, .text-layer { position: absolute; inset: 0; }
-  #grid-canvas, #guide-canvas { z-index: 100; pointer-events: none; }
-  #paint-canvas { z-index: 80; touch-action: none; }
-  .text-layer { z-index: 120; pointer-events: none; }
+    /* ===== Settings Panel ===== */
+    .settings-panel {
+      position: fixed; top: var(--topbar-height); left: var(--toolbar-width); bottom: 0;
+      width: var(--settings-width); background-color: var(--bg-main); z-index: 20;
+      transform: translateX(-100%); transition: transform 0.3s ease-in-out;
+      border-right: 1px solid var(--border-color); overflow-y: auto;
+      padding: 16px; display: flex; flex-direction: column; gap: 16px;
+    }
+    body[data-settings-open="true"] .settings-panel { transform: translateX(0); }
+    .settings-group { display: flex; flex-direction: column; gap: 12px; }
+    .settings-group[data-tool-binding] { display: none; }
+    .settings-group-title {
+      font-size: 12px; font-weight: 600; color: var(--ink-dim);
+      text-transform: uppercase; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;
+    }
+    .setting-row { display: flex; justify-content: space-between; align-items: center; }
+    .setting-row label { font-size: 14px; color: var(--ink-dim); }
+    .setting-row input[type="color"] {
+      width: 32px; height: 32px; padding: 2px; border: none; border-radius: 6px;
+      background-color: var(--bg-light); cursor: pointer;
+    }
+    .setting-row input[type="range"] { flex-grow: 1; margin: 0 12px; }
+    .setting-row .value-label { font-size: 14px; min-width: 40px; text-align: right; }
+    .setting-row .btn-group { display: flex; gap: 6px; }
+    .setting-row .btn-group button {
+      padding: 6px 8px; font-size: 12px; background-color: var(--bg-light);
+      border: 1px solid var(--border-color); color: var(--ink-dim); border-radius: 4px;
+      cursor: pointer;
+    }
+    .setting-row .btn-group button[data-active="true"] {
+      background-color: var(--accent-blue); color: white; border-color: var(--accent-blue);
+    }
+    .text-actions button { flex-grow: 1; padding: 8px; }
 
-  /* --- Text Nodes --- */
-  .note-text {
-    position: absolute; min-width: 64px; min-height: 28px; padding: 6px 8px;
-    color: #eaf3ff; background: transparent;
-    outline: 1px dashed rgba(255,255,255,.25); border-radius: 6px;
-    pointer-events: auto; white-space: pre-wrap; word-break: break-all;
-  }
-  .note-text[contenteditable="true"]:focus { outline: 2px solid var(--ok); }
-  .note-text__delete-btn {
-    position: absolute; right: -8px; top: -10px; font-size: 11px;
-    color: #fff; background: #0008; border: 1px solid #fff3;
-    border-radius: 8px; padding: 2px 6px; display: none; cursor: pointer;
-  }
-  .note-text:focus-within .note-text__delete-btn { display: block; }
-
-  /* --- Tooltip --- */
-  [data-tooltip] { position: relative; }
-  [data-tooltip]::after {
-    content: attr(data-tooltip); position: absolute; left: 48px; top: 50%;
-    transform: translateY(-50%); background: #222a; color: #fff;
-    font-size: 12px; padding: 4px 8px; border-radius: 8px; white-space: nowrap;
-    pointer-events: none; opacity: 0; transition: .15s; z-index: 4800;
-  }
-  [data-tooltip]:hover::after { opacity: 1; }
-  .sidebar .tool[data-tool="settings"][data-tooltip]::after {
-    left: 8px; top: auto; bottom: calc(100% + 8px); transform: none;
-  }
-
-  /* --- Media --- */
-  @media print {
-    .topbar, .sidebar, .panel, [data-tooltip]::after { display: none !important; }
-    #stage { padding-left: 0 !important; }
-    body, html, .page-wrap { height: auto; }
-  }
-</style>
+    /* ===== Text Nodes ===== */
+    .text-node {
+      position: absolute; min-width: 20px; min-height: 20px;
+      border: 1px dashed var(--border-color); border-radius: 4px; padding: 8px;
+      background-color: rgba(30, 35, 42, 0.5); font-size: 16px;
+      white-space: pre-wrap; word-break: break-word; pointer-events: all;
+    }
+    .text-node:focus {
+      border-style: solid; border-color: var(--accent-blue); outline: none;
+      background-color: var(--bg-main);
+    }
+    
+    @media print {
+      .topbar, .toolbar, .settings-panel { display: none !important; }
+      .main-content { top: 0; left: 0; right: 0; bottom: 0; }
+    }
+  </style>
 </head>
-<body>
+<body data-settings-open="true">
 
-<header class="topbar">
-  <strong id="verText">NOTE LINK V0.9.1</strong>
-  <span class="topbar__spacer"></span>
-  <button class="topbar__btn" id="btnZoomOut" aria-label="ズームアウト">−</button>
-  <button class="topbar__btn" id="btnZoomReset">100%</button>
-  <button class="topbar__btn" id="btnZoomIn" aria-label="ズームイン">＋</button>
-  <button class="topbar__btn" id="btnUndo" aria-label="元に戻す">undo</button>
-  <button class="topbar__btn" id="btnRedo" aria-label="やり直し">redo</button>
-  <button class="topbar__btn" id="btnPrint" aria-label="印刷">印刷</button>
-  <button class="topbar__btn" id="btnPng" aria-label="PNG形式で書き出し">PNG</button>
-  <button class="topbar__btn" id="btnShare" aria-label="共有">共有</button>
-  <span class="topbar__build" id="buildText"></span>
-</header>
-
-<div class="page-wrap">
-  <nav class="sidebar" id="sidebar">
-    <div class="sidebar__rail" id="toolRail" role="toolbar" aria-label="ツール選択">
-      <button class="tool" data-tool="toggle" data-tooltip="ツールバーの開閉" aria-label="ツールバーの開閉">
-        <svg viewBox="0 0 24 24"><path d="M5 15 L12 7 L19 15 M19 15 L5 15"/></svg>
-      </button>
-      <button class="tool" data-tool="pen" data-tooltip="ペン" aria-label="ペン" aria-pressed="false">
-        <svg viewBox="0 0 24 24"><path d="M3 21l4-1 12-12-3-3L4 17l-1 4zM14 6l3 3"/></svg>
-      </button>
-      <button class="tool" data-tool="marker" data-tooltip="マーカー" aria-label="マーカー" aria-pressed="false">
-        <svg viewBox="0 0 24 24"><path d="M3 16l10-10 5 5-10 10-5 1 1-6zM13 6l5 5"/></svg>
-      </button>
-      <button class="tool" data-tool="eraser" data-tooltip="消しゴム" aria-label="消しゴム" aria-pressed="false">
-        <svg viewBox="0 0 24 24"><path d="M3 15l8-8 6 6-6 6H7zM13 7l4 4"/></svg>
-      </button>
-      <button class="tool" data-tool="hand" data-tooltip="選択/パン" aria-label="選択/パン" aria-pressed="false">
-        <svg viewBox="0 0 24 24"><path d="M9 11V6a2 2 0 0 1 4 0v5M13 11V5a2 2 0 1 1 4 0v8M9 11a2 2 0 0 1 4 0v8l-2 2-4-4-2-6 2-1z"/></svg>
-      </button>
-      <button class="tool" data-tool="keyboard" data-tooltip="テキスト" aria-label="テキスト" aria-pressed="false">
-        <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2"></rect><path d="M7 10h10M5 13h14"/></svg>
-      </button>
-      <button class="tool" data-tool="settings" data-tooltip="ツール設定" aria-label="ツール設定の表示/非表示" aria-expanded="false" aria-controls="settingsPanel">
-        <svg viewBox="0 0 24 24"><path d="M12 7.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zM4 13h2l1 2-1 2H4l-1-2 1-2zm14 0h2l1 2-1 2h-2l-1-2 1-2zM8 4h2l2 1 2-1h2l1 2-1 2h-2l-2-1-2 1H8L7 6l1-2z"/></svg>
-      </button>
+  <header class="topbar">
+    <div class="topbar-title">Note Link v2.0</div>
+    <span class="topbar-spacer"></span>
+    <div class="topbar-group">
+      <button class="topbar-btn" data-action="zoom-out">-</button>
+      <button class="topbar-btn" data-action="zoom-reset">100%</button>
+      <button class="topbar-btn" data-action="zoom-in">+</button>
     </div>
+    <div class="topbar-group" style="margin-left: 16px;">
+      <button class="topbar-btn" data-action="undo">Undo</button>
+      <button class="topbar-btn" data-action="redo">Redo</button>
+    </div>
+    <div class="topbar-group" style="margin-left: 16px;">
+      <button class="topbar-btn" data-action="save-png">PNG</button>
+      <button class="topbar-btn" data-action="print">Print</button>
+    </div>
+  </header>
+
+  <nav class="toolbar" data-event-target="toolbar">
+    <button class="tool-btn" data-tool="pen" title="ペン">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+    </button>
+    <button class="tool-btn" data-tool="marker" title="マーカー">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m13.5 6.5 4 4"/><path d="m21.5 14.5-9-9 4-4 9 9-4 4Z"/><path d="m14.5 21.5-9-9 4-4 9 9-4 4Z"/><path d="M5.5 12.5 3 15l-1.5 6.5 6.5-1.5 2.5-2.5"/></svg>
+    </button>
+    <button class="tool-btn" data-tool="eraser" title="消しゴム">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 12 5 5"/></svg>
+    </button>
+    <div class="toolbar-separator"></div>
+    <button class="tool-btn" data-tool="text" title="テキスト">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14"/><path d="M12 3v18"/><path d="M10 18h4"/></svg>
+    </button>
+    <button class="tool-btn" data-tool="pan" title="移動">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15.5A2.5 2.5 0 0 0 6.5 18H18a2.5 2.5 0 0 0 2.5-2.5V12A2.5 2.5 0 0 0 18 9.5h-3.26a2.5 2.5 0 0 1-2.47-1.8L12 6.5V2.5"/><path d="m18 15-4-4"/><path d="m14 15-4-4"/></svg>
+    </button>
+    <div class="toolbar-separator"></div>
+    <button class="tool-btn" data-action="toggle-settings" title="設定" style="margin-top: auto;">
+       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
   </nav>
 
-  <div class="panel" id="settingsPanel" role="dialog" aria-labelledby="panelTitle" data-visible="false">
-    <div class="panel__handle" id="panelHandle">
-      <div class="panel__title" id="panelTitle">-</div>
-      <button class="panel__close-btn" id="panelClose" title="閉じる" aria-label="設定パネルを閉じる">☒</button>
+  <aside class="settings-panel" data-event-target="settings">
+    <div class="settings-group" data-tool-binding="pen marker">
+      <div class="settings-group-title">ブラシ設定</div>
+      <div class="setting-row">
+        <label for="color-picker">カラー</label>
+        <input type="color" id="color-picker" data-setting="color">
+      </div>
+      <div class="setting-row">
+        <label for="size-slider">サイズ</label>
+        <input type="range" id="size-slider" min="1" max="100" data-setting="size">
+        <span class="value-label" data-value-for="size"></span>
+      </div>
+      <div class="setting-row" data-tool-binding="marker">
+        <label for="opacity-slider">不透明度</label>
+        <input type="range" id="opacity-slider" min="5" max="100" step="5" data-setting="opacity">
+        <span class="value-label" data-value-for="opacity"></span>
+      </div>
+       <div class="setting-row">
+        <label>線端</label>
+        <div class="btn-group" data-setting="lineCap">
+            <button data-value="butt">角</button>
+            <button data-value="round">丸</button>
+        </div>
+      </div>
     </div>
-    <div class="panel__row" data-panel-row="color"><label>色</label><input type="color" id="uiColor" value="#cbe58a"></div>
-    <div class="panel__row" data-panel-row="size"><label>太さ</label><input type="range" min="1" max="60" value="4" id="uiSize"><span id="uiSizeVal">4px</span></div>
-    <div class="panel__row" data-panel-row="alpha"><label>不透明度</label><input type="range" min="10" max="100" value="100" id="uiAlpha"><span id="uiAlphaVal">100%</span></div>
-    <div class="panel__row" data-panel-row="cap"><label>端の形</label><select id="uiCap"><option value="butt">□ 角</option><option value="round">● 丸</option></select></div>
-    <div class="panel__row" data-panel-row="straight"><label>直線モード</label><label><input type="checkbox" id="uiStraight"> 固定</label><label><input type="checkbox" id="uiGridFirst">グリッド優先</label></div>
-    <div class="panel__row" data-panel-row="penExt"><label>ペン拡張</label><label><input type="checkbox" id="uiPalm" checked> パーム除外</label><label><input type="checkbox" id="uiPressure" checked> 圧力</label><label><input type="checkbox" id="uiTilt" checked> 傾き</label></div>
-    <div class="panel__row" data-panel-row="grid"><label>グリッド</label><label><input type="checkbox" id="uiGrid"> 表示</label><select id="uiGridStep"><option value="5">5mm</option><option value="10" selected>10mm</option></select><input type="color" id="uiGridColor" value="#3a4f7a"/></div>
-    <div class="panel__row" data-panel-row="keyboard"><label>テキスト</label><div class="panel__btn-grid"><button id="btnTextAdd">テキストを追加</button><button id="btnTextBold">太字</button><button id="btnTextIt">斜体</button><button id="btnTextBoxDel">枠ごと削除</button></div></div>
-  </div>
+    <div class="settings-group" data-tool-binding="eraser">
+        <div class="settings-group-title">消しゴム設定</div>
+        <div class="setting-row">
+            <label for="eraser-size-slider">サイズ</label>
+            <input type="range" id="eraser-size-slider" min="2" max="200" data-setting="size">
+            <span class="value-label" data-value-for="size"></span>
+        </div>
+    </div>
+     <div class="settings-group" data-tool-binding="pen marker">
+        <div class="settings-group-title">拡張機能</div>
+        <div class="setting-row">
+            <label>直線モード</label>
+             <div class="btn-group" data-setting="straight">
+                <button data-value="false">オフ</button>
+                <button data-value="true">オン</button>
+            </div>
+        </div>
+    </div>
+    <div class="settings-group" data-tool-binding="text">
+        <div class="settings-group-title">テキスト</div>
+         <div class="setting-row text-actions">
+            <button class="topbar-btn" data-action="add-text">テキスト追加</button>
+        </div>
+    </div>
+    <div class="settings-group" data-tool-binding="all">
+      <div class="settings-group-title">キャンバス</div>
+      <div class="setting-row">
+        <label>グリッド</label>
+        <div class="btn-group" data-setting="grid">
+            <button data-value="false">非表示</button>
+            <button data-value="true">表示</button>
+        </div>
+      </div>
+    </div>
+  </aside>
 
-  <main id="stage" class="stage">
-    <div id="viewport" class="viewport">
-      <canvas id="grid-canvas" class="canvas"></canvas>
-      <canvas id="guide-canvas" class="canvas"></canvas>
-      <canvas id="paint-canvas" class="canvas"></canvas>
-      <div id="text-layer" class="text-layer"></div>
+  <main class="main-content">
+    <div class="canvas-viewport" id="viewport">
+      <canvas id="grid-canvas" class="app-canvas"></canvas>
+      <canvas id="paint-canvas" class="app-canvas"></canvas>
+      <canvas id="guide-canvas" class="app-canvas" style="pointer-events: none;"></canvas>
+      <div id="text-layer" class="app-canvas" style="pointer-events: none;"></div>
     </div>
   </main>
-</div>
 
-<script type="module">
-  'use strict';
+  <script type="module">
+    const app = {
+      // --- STATE: アプリの状態をすべて管理 ---
+      state: {
+        tool: 'pen',
+        zoom: 1,
+        pan: { x: 0, y: 0 },
+        isPanning: false,
+        isDrawing: false,
+        startPoint: null,
+        history: [],
+        redoStack: [],
+        settings: {
+          pen: { color: '#e8eff6', size: 5, opacity: 100, lineCap: 'round', straight: 'false' },
+          marker: { color: '#3b82f6', size: 25, opacity: 40, lineCap: 'butt', straight: 'false' },
+          eraser: { size: 40 },
+          grid: 'false'
+        }
+      },
 
-  /**
-   * ---- CONSTANTS ----
-   */
-  const CONSTANTS = {
-    APP_VERSION: 'V0.9.1',
-    BUILD_ID: 'drag-fix-250924',
-    DPR: Math.max(1, devicePixelRatio || 1),
-    HISTORY_LIMIT: 20,
-    PALM_REJECTION_MS: 1200,
-    PALM_REJECTION_AREA: 1200,
-    TOOLS: {
-      PEN: 'pen', MARKER: 'marker', ERASER: 'eraser', HAND: 'hand', KEYBOARD: 'keyboard',
-    },
-    KEY: { SHIFT: 'Shift' },
-  };
+      // --- DOM: 使用するDOM要素をキャッシュ ---
+      dom: {},
 
-  /**
-   * ---- DOM Elements ----
-   */
-  const $ = s => document.querySelector(s);
-  const $$ = s => Array.from(document.querySelectorAll(s));
-  const DOM = {
-    topbar: $('#topbar'), sidebar: $('#sidebar'), panel: $('#settingsPanel'),
-    toolRail: $('#toolRail'), panelHandle: $('#panelHandle'),
-    viewport: $('#viewport'), textLayer: $('#text-layer'),
-    canvas: {
-      grid: $('#grid-canvas'), guide: $('#guide-canvas'), paint: $('#paint-canvas'),
-    },
-    ctx: {
-      grid: $('#grid-canvas').getContext('2d'),
-      guide: $('#guide-canvas').getContext('2d'),
-      paint: $('#paint-canvas').getContext('2d', { alpha: true }),
-    },
-    ui: {
-      verText: $('#verText'), buildText: $('#buildText'), panelTitle: $('#panelTitle'),
-      btnZoomIn: $('#btnZoomIn'), btnZoomOut: $('#btnZoomOut'), btnZoomReset: $('#btnZoomReset'),
-      btnUndo: $('#btnUndo'), btnRedo: $('#btnRedo'), btnPrint: $('#btnPrint'), btnPng: $('#btnPng'), btnShare: $('#btnShare'),
-      panelClose: $('#panelClose'),
-      color: $('#uiColor'), size: $('#uiSize'), alpha: $('#uiAlpha'), cap: $('#uiCap'),
-      sizeVal: $('#uiSizeVal'), alphaVal: $('#uiAlphaVal'),
-      straight: $('#uiStraight'), gridFirst: $('#uiGridFirst'),
-      gridOn: $('#uiGrid'), gridStep: $('#uiGridStep'), gridColor: $('#uiGridColor'),
-      palm: $('#uiPalm'), pressure: $('#uiPressure'), tilt: $('#uiTilt'),
-      btnTextAdd: $('#btnTextAdd'), btnTextBold: $('#btnTextBold'), btnTextIt: $('#btnTextIt'), btnTextBoxDel: $('#btnTextBoxDel'),
-    },
-  };
+      // --- 初期化 ---
+      init() {
+        this.cacheDom();
+        this.addEventListeners();
+        this.resizeCanvas();
+        this.setActiveTool('pen');
+        this.updateUI();
+        console.log("Note Link v2.0 Initialized");
+      },
 
-  /**
-   * ---- STATE MANAGEMENT ----
-   */
-  const state = {
-    currentTool: CONSTANTS.TOOLS.PEN,
-    zoom: 1, panX: 0, panY: 0,
-    isDrawing: false, isPanning: false, startPoint: null,
-    isShiftPressed: false,
-    penRecent: { active: false, ts: 0 },
-    history: [], redoStack: [],
-    perToolSettings: {
-      pen: { color: '#cbe58a', size: 4, alpha: 1, cap: 'butt' },
-      marker: { color: '#cbe58a', size: 16, alpha: 0.4, cap: 'butt' },
-      eraser: { size: 24 },
-    },
-  };
+      cacheDom() {
+        this.dom.body = document.body;
+        this.dom.viewport = document.getElementById('viewport');
+        this.dom.textLayer = document.getElementById('text-layer');
+        this.dom.canvases = {
+          grid: document.getElementById('grid-canvas'),
+          paint: document.getElementById('paint-canvas'),
+          guide: document.getElementById('guide-canvas'),
+        };
+        this.dom.ctx = {
+          grid: this.dom.canvases.grid.getContext('2d'),
+          paint: this.dom.canvases.paint.getContext('2d'),
+          guide: this.dom.canvases.guide.getContext('2d'),
+        };
+        this.dom.topbar = document.querySelector('.topbar');
+        this.dom.toolbar = document.querySelector('.toolbar');
+        this.dom.settingsPanel = document.querySelector('.settings-panel');
+        this.dom.zoomResetBtn = document.querySelector('[data-action="zoom-reset"]');
+      },
 
-  /**
-   * ---- UTILS ----
-   */
-  const mmToPx = mm => (mm * 96 / 25.4) * CONSTANTS.DPR;
-  const pxToMm = px => (px * 25.4 / 96);
-  const hexToRgba = (hex, alpha) => {
-    const [r, g, b] = (hex.match(/\w\w/g) || []).map(x => parseInt(x, 16));
-    return `rgba(${r || 0}, ${g || 0}, ${b || 0}, ${alpha ?? 1})`;
-  };
-  const clearCanvas = (canvas) => {
-    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-  };
-  const getPoint = (e) => {
-    const rect = DOM.canvas.paint.getBoundingClientRect();
-    return {
-      x: (e.clientX - rect.left) / state.zoom * CONSTANTS.DPR,
-      y: (e.clientY - rect.top) / state.zoom * CONSTANTS.DPR,
-    };
-  };
-
-  /**
-   * ---- VIEW / UI ----
-   */
-  function updateViewportTransform() {
-    DOM.viewport.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
-  }
-
-  function resizeHandler() {
-    document.documentElement.style.setProperty('--topbar-h', `${DOM.topbar.getBoundingClientRect().height || 44}px`);
-    const rect = DOM.viewport.getBoundingClientRect();
-    const canvasW = Math.max(1, Math.round(rect.width / state.zoom));
-    const canvasH = Math.max(1, Math.round(rect.height / state.zoom));
-
-    for (const canvas of Object.values(DOM.canvas)) {
-      canvas.width = Math.round(canvasW * CONSTANTS.DPR);
-      canvas.height = Math.round(canvasH * CONSTANTS.DPR);
-      canvas.style.width = `${canvasW * state.zoom}px`;
-      canvas.style.height = `${canvasH * state.zoom}px`;
-    }
-    drawGrid();
-  }
-
-  function syncUIToState() {
-    const s = state.perToolSettings[state.currentTool] || {};
-    DOM.ui.color.value = s.color || '#ffffff';
-    DOM.ui.size.value = s.size || 4;
-    DOM.ui.sizeVal.textContent = `${s.size || 4}px (${pxToMm(s.size || 4).toFixed(1)}mm)`;
-    DOM.ui.alpha.value = (s.alpha ?? 1) * 100;
-    DOM.ui.alphaVal.textContent = `${Math.round((s.alpha ?? 1) * 100)}%`;
-    DOM.ui.cap.value = s.cap || 'butt';
-    DOM.ui.straight.checked = s.straight || false;
-  }
-  
-  function updateUIVisibility() {
-      const tool = state.currentTool;
-      const show = (prop) => (document.querySelector(`[data-panel-row="${prop}"]`).style.display = '');
-      const hide = (prop) => (document.querySelector(`[data-panel-row="${prop}"]`).style.display = 'none');
-      
-      $$('[data-panel-row]').forEach(el => hide(el.dataset.panelRow));
-
-      if ([CONSTANTS.TOOLS.PEN, CONSTANTS.TOOLS.MARKER, CONSTANTS.TOOLS.ERASER].includes(tool)) show('size');
-      if ([CONSTANTS.TOOLS.PEN, CONSTANTS.TOOLS.MARKER].includes(tool)) {
-        show('color'); show('cap'); show('straight'); show('penExt');
-      }
-      if (tool === CONSTANTS.TOOLS.MARKER) show('alpha');
-      if (tool === CONSTANTS.TOOLS.KEYBOARD) show('keyboard');
-      show('grid');
-  }
-
-  function setActiveTool(newTool) {
-    state.currentTool = newTool;
-    $$('.tool').forEach(btn => {
-      const isActive = btn.dataset.tool === newTool;
-      btn.setAttribute('data-active', isActive);
-      btn.setAttribute('aria-pressed', isActive);
-    });
-    DOM.ui.panelTitle.textContent = `設定: ${newTool}`;
-    updateUIVisibility();
-    syncUIToState();
-  }
-
-  /**
-   * ---- DRAWING & CANVAS ----
-   */
-  function drawGrid() {
-    clearCanvas(DOM.canvas.grid);
-    if (!DOM.ui.gridOn.checked) return;
-    const step = mmToPx(Number(DOM.ui.gridStep.value));
-    const ctx = DOM.ctx.grid;
-    ctx.save();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = hexToRgba(DOM.ui.gridColor.value, 0.8);
-    ctx.beginPath();
-    for (let x = 0.5; x <= DOM.canvas.grid.width; x += step) { ctx.moveTo(x, 0); ctx.lineTo(x, DOM.canvas.grid.height); }
-    for (let y = 0.5; y <= DOM.canvas.grid.height; y += step) { ctx.moveTo(0, y); ctx.lineTo(DOM.canvas.grid.width, y); }
-    ctx.stroke();
-    ctx.restore();
-  }
-  
-  function applyContextSettings() {
-    const { paint: ctx } = DOM.ctx;
-    const tool = state.currentTool;
-    const settings = state.perToolSettings[tool] || {};
-    const baseSize = settings.size || 4;
-
-    ctx.globalCompositeOperation = 'source-over';
-    if (tool === CONSTANTS.TOOLS.ERASER) {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.strokeStyle = '#000';
-    } else if (tool === CONSTANTS.TOOLS.MARKER) {
-      ctx.strokeStyle = hexToRgba(settings.color, settings.alpha);
-    } else {
-      ctx.strokeStyle = settings.color;
-    }
-    ctx.lineWidth = baseSize * CONSTANTS.DPR;
-    ctx.lineCap = settings.cap || 'round';
-    return baseSize;
-  }
-  
-  function getDynamicWidth(event, baseSize) {
-    let width = baseSize;
-    if (DOM.ui.pressure.checked && typeof event.pressure === 'number') {
-      const pressure = Math.max(0.05, Math.min(1, event.pressure || 0.5));
-      width = baseSize * (0.4 + 0.9 * pressure);
-    }
-    if (DOM.ui.tilt.checked && event.tiltX != null) {
-      const tilt = Math.hypot(event.tiltX, event.tiltY) / 90;
-      const factor = state.currentTool === CONSTANTS.TOOLS.MARKER ? 0.9 : 0.4;
-      width *= (1 + factor * Math.min(1, tilt));
-    }
-    return width;
-  }
-  
-  function snapToGrid(point) {
-    if (!DOM.ui.gridOn.checked) return point;
-    const gridPx = mmToPx(Number(DOM.ui.gridStep.value));
-    return {
-      x: Math.round(point.x / gridPx) * gridPx,
-      y: Math.round(point.y / gridPx) * gridPx,
-    };
-  }
-
-  function getStraightLineEndPoint(start, end) {
-      if (DOM.ui.gridFirst.checked) {
-          const snappedEnd = snapToGrid(end);
-          return { ...snappedEnd, angle: Math.atan2(snappedEnd.y - start.y, snappedEnd.x - start.x) };
-      }
-      const dx = end.x - start.x, dy = end.y - start.y;
-      const angleStep = Math.PI / 12; // 15 degrees
-      const originalAngle = Math.atan2(dy, dx);
-      const snappedAngle = Math.round(originalAngle / angleStep) * angleStep;
-      const length = Math.hypot(dx, dy);
-      let newX = start.x + Math.cos(snappedAngle) * length;
-      let newY = start.y + Math.sin(snappedAngle) * length;
-      if (DOM.ui.gridOn.checked) {
-          ({ x: newX, y: newY } = snapToGrid({ x: newX, y: newY }));
-      }
-      return { x: newX, y: newY, angle: snappedAngle };
-  }
-
-  function drawGuideLine(start, end) {
-      const { guide: ctx } = DOM.ctx;
-      clearCanvas(DOM.canvas.guide);
-      ctx.save();
-      ctx.lineCap = DOM.ctx.paint.lineCap;
-      ctx.lineWidth = DOM.ctx.paint.lineWidth;
-      ctx.strokeStyle = '#7ec8ff';
-      ctx.setLineDash([6 * CONSTANTS.DPR, 6 * CONSTANTS.DPR]);
-      ctx.beginPath();
-      ctx.moveTo(start.x, start.y);
-      ctx.lineTo(end.x, end.y);
-      ctx.stroke();
-      ctx.restore();
-  }
-
-  /**
-   * ---- HISTORY (Undo/Redo) ----
-   */
-  async function pushHistory() {
-    const snapshot = { url: DOM.canvas.paint.toDataURL(), texts: DOM.textLayer.innerHTML };
-    state.history.push(snapshot);
-    if (state.history.length > CONSTANTS.HISTORY_LIMIT) state.history.shift();
-    state.redoStack.length = 0;
-  }
-  async function restoreFromSnapshot(snapshot) {
-    clearCanvas(DOM.canvas.paint);
-    DOM.textLayer.innerHTML = snapshot?.texts || '';
-    if (!snapshot?.url) return;
-    return new Promise(resolve => {
-      const img = new Image();
-      img.onload = () => { DOM.ctx.paint.drawImage(img, 0, 0); resolve(); };
-      img.src = snapshot.url;
-    });
-  }
-
-  /**
-   * ---- TEXT MANIPULATION (No execCommand) ----
-   */
-  function addTextNode() {
-    const el = document.createElement('div');
-    el.className = 'note-text';
-    el.contentEditable = 'true';
-    el.style.left = `${90 + Math.random() * 40}px`;
-    el.style.top = `${70 + Math.random() * 40}px`;
-    el.textContent = 'テキスト';
-
-    const delBtn = document.createElement('button');
-    delBtn.className = 'note-text__delete-btn';
-    delBtn.textContent = '削除';
-    delBtn.addEventListener('click', () => el.remove());
-    el.appendChild(delBtn);
-
-    DOM.textLayer.appendChild(el);
-    el.focus();
-  }
-  
-  function styleSelectedText(tag) {
-    const selection = window.getSelection();
-    if (!selection.rangeCount || selection.isCollapsed) return;
-    const range = selection.getRangeAt(0);
-    if (!DOM.textLayer.contains(range.commonAncestorContainer)) return;
-    
-    const element = document.createElement(tag);
-    try {
-        range.surroundContents(element);
-    } catch (e) {
-        console.warn('Cannot surround contents:', e);
-    }
-    selection.removeAllRanges();
-  }
-
-  /**
-   * ---- EVENT HANDLERS ----
-   */
-  function handlePointerDown(e) {
-    updatePenRecent(e);
-    if (isPalmTouch(e)) return;
-    
-    if (state.currentTool === CONSTANTS.TOOLS.HAND) {
-      state.isPanning = true;
-      DOM.canvas.paint.setPointerCapture(e.pointerId);
-      return;
-    }
-
-    if (![CONSTANTS.TOOLS.PEN, CONSTANTS.TOOLS.MARKER, CONSTANTS.TOOLS.ERASER].includes(state.currentTool)) return;
-
-    e.preventDefault();
-    DOM.canvas.paint.setPointerCapture(e.pointerId);
-    
-    pushHistory();
-    state.isDrawing = true;
-    const baseSize = applyContextSettings();
-    DOM.ctx.paint.lineWidth = getDynamicWidth(e, baseSize) * CONSTANTS.DPR;
-    
-    let p = getPoint(e);
-    const useStraightLine = state.isShiftPressed || DOM.ui.straight.checked;
-    state.startPoint = (DOM.ui.gridFirst.checked && useStraightLine) ? snapToGrid(p) : p;
-
-    if (!useStraightLine) {
-      DOM.ctx.paint.beginPath();
-      DOM.ctx.paint.moveTo(state.startPoint.x, state.startPoint.y);
-    }
-  }
-
-  function handlePointerMove(e) {
-    updatePenRecent(e);
-    if (isPalmTouch(e)) return;
-
-    if (state.isPanning) {
-      state.panX += e.movementX;
-      state.panY += e.movementY;
-      updateViewportTransform();
-      return;
-    }
-    if (!state.isDrawing) return;
-
-    const baseSize = applyContextSettings();
-    DOM.ctx.paint.lineWidth = getDynamicWidth(e, baseSize) * CONSTANTS.DPR;
-    const p = getPoint(e);
-    const useStraightLine = state.isShiftPressed || DOM.ui.straight.checked;
-
-    if (useStraightLine) {
-      const endPoint = getStraightLineEndPoint(state.startPoint, p);
-      drawGuideLine(state.startPoint, endPoint);
-    } else {
-      DOM.ctx.paint.lineTo(p.x, p.y);
-      DOM.ctx.paint.stroke();
-    }
-  }
-
-  function handlePointerUp(e) {
-    if (state.isPanning) {
-      state.isPanning = false;
-      return;
-    }
-    if (!state.isDrawing) {
-      clearCanvas(DOM.canvas.guide);
-      return;
-    }
-
-    const useStraightLine = state.isShiftPressed || DOM.ui.straight.checked;
-    if (useStraightLine) {
-      const p = getPoint(e);
-      const endPoint = getStraightLineEndPoint(state.startPoint, p);
-      const baseSize = applyContextSettings();
-      DOM.ctx.paint.lineWidth = getDynamicWidth(e, baseSize) * CONSTANTS.DPR;
-      DOM.ctx.paint.beginPath();
-      DOM.ctx.paint.moveTo(state.startPoint.x, state.startPoint.y);
-      DOM.ctx.paint.lineTo(endPoint.x, endPoint.y);
-      DOM.ctx.paint.stroke();
-    }
-    
-    state.isDrawing = false;
-    state.startPoint = null;
-    clearCanvas(DOM.canvas.guide);
-  }
-  
-  function updatePenRecent(e) {
-    if (e.pointerType === 'pen') {
-      state.penRecent.active = true;
-      state.penRecent.ts = performance.now();
-    }
-  }
-
-  function isPalmTouch(e) {
-    if (!DOM.ui.palm.checked) return false;
-    const now = performance.now();
-    if (e.pointerType === 'touch' && state.penRecent.active && (now - state.penRecent.ts) < CONSTANTS.PALM_REJECTION_MS) return true;
-    const area = (e.width || 0) * (e.height || 0);
-    if (e.pointerType === 'touch' && area > CONSTANTS.PALM_REJECTION_AREA) return true;
-    return false;
-  }
-  
-  /**
-   * [MODIFIED] Makes the settings panel draggable.
-   * Listens for mouse movement on the whole document during a drag
-   * to prevent the panel from "letting go" if the cursor moves too fast.
-   */
-  function handlePanelDrag(panel, handle) {
-    let isDragging = false, startX = 0, startY = 0, offsetX = 0, offsetY = 0;
-
-    const onPointerMove = (e) => {
-      if (!isDragging) return;
-      e.preventDefault();
-      const newX = offsetX + (e.clientX - startX);
-      const newY = offsetY + (e.clientY - startY);
-      const topbarHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h'));
-
-      panel.style.left = `${Math.max(56, newX)}px`;
-      panel.style.top = `${Math.max(topbarHeight + 6, newY)}px`;
-    };
-
-    const onPointerUp = () => {
-      isDragging = false;
-      handle.style.cursor = 'grab';
-      document.removeEventListener('pointermove', onPointerMove);
-      document.removeEventListener('pointerup', onPointerUp);
-    };
-
-    const onPointerDown = (e) => {
-      if (e.button !== 0 || e.target.closest('.panel__close-btn')) return;
-      
-      isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      const rect = panel.getBoundingClientRect();
-      offsetX = rect.left;
-      offsetY = rect.top;
-      handle.style.cursor = 'grabbing';
-      
-      document.addEventListener('pointermove', onPointerMove);
-      document.addEventListener('pointerup', onPointerUp);
-    };
-
-    handle.addEventListener('pointerdown', onPointerDown);
-  }
-
-
-  /**
-   * ---- EXPORT / SHARE ----
-   */
-   function getCompositeCanvas() {
-        const outCanvas = document.createElement('canvas');
-        outCanvas.width = DOM.canvas.paint.width;
-        outCanvas.height = DOM.canvas.paint.height;
-        const ctx = outCanvas.getContext('2d');
+      // --- イベントリスナー ---
+      addEventListeners() {
+        window.addEventListener('resize', () => this.resizeCanvas());
+        this.dom.canvases.paint.addEventListener('pointerdown', this.onPointerDown.bind(this));
+        this.dom.canvases.paint.addEventListener('pointermove', this.onPointerMove.bind(this));
+        this.dom.canvases.paint.addEventListener('pointerup', this.onPointerUp.bind(this));
+        this.dom.canvases.paint.addEventListener('pointerleave', this.onPointerUp.bind(this));
+        document.addEventListener('keydown', e => { if (e.key === ' ') this.dom.body.style.cursor = 'grab'; });
+        document.addEventListener('keyup', e => { if (e.key === ' ') this.dom.body.style.cursor = 'default'; });
         
-        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0b1020';
-        ctx.fillRect(0, 0, outCanvas.width, outCanvas.height);
-        
-        if (DOM.ui.gridOn.checked) ctx.drawImage(DOM.canvas.grid, 0, 0);
-        ctx.drawImage(DOM.canvas.paint, 0, 0);
-
-        const textNodes = DOM.textLayer.querySelectorAll('.note-text');
-        textNodes.forEach(node => {
-            const nodeRect = node.getBoundingClientRect();
-            const layerRect = DOM.textLayer.getBoundingClientRect();
-            const x = ((nodeRect.left - layerRect.left) / state.zoom) * CONSTANTS.DPR;
-            const y = ((nodeRect.top - layerRect.top) / state.zoom) * CONSTANTS.DPR;
-            const style = getComputedStyle(node);
-            
-            ctx.fillStyle = style.color || '#eaf3ff';
-            ctx.font = `${parseInt(style.fontSize, 10) * CONSTANTS.DPR}px ${style.fontFamily}`;
-            const lines = node.textContent.trim().split('\n');
-            lines.forEach((line, index) => {
-                ctx.fillText(line, x, y + (parseInt(style.fontSize, 10) * (index + 1) * CONSTANTS.DPR));
-            });
+        // Event Delegation
+        this.dom.topbar.addEventListener('click', e => this.handleAction(e.target.closest('[data-action]')));
+        this.dom.toolbar.addEventListener('click', e => {
+            const toolBtn = e.target.closest('[data-tool]');
+            const actionBtn = e.target.closest('[data-action]');
+            if (toolBtn) this.setActiveTool(toolBtn.dataset.tool);
+            if (actionBtn) this.handleAction(actionBtn);
         });
-        return outCanvas;
-    }
+        this.dom.settingsPanel.addEventListener('input', e => {
+            const settingElem = e.target.closest('[data-setting]');
+            if (settingElem) this.updateSetting(settingElem);
+        });
+        this.dom.settingsPanel.addEventListener('click', e => {
+            const settingBtn = e.target.closest('[data-setting] button');
+            if (settingBtn) this.updateSetting(settingBtn.parentElement, settingBtn.dataset.value);
+            const actionBtn = e.target.closest('[data-action]');
+            if(actionBtn) this.handleAction(actionBtn);
+        });
+      },
+      
+      handleAction(element) {
+        if (!element) return;
+        const action = element.dataset.action;
+        switch (action) {
+          case 'toggle-settings': this.toggleSettingsPanel(); break;
+          case 'zoom-in': this.setZoom(this.state.zoom * 1.2); break;
+          case 'zoom-out': this.setZoom(this.state.zoom / 1.2); break;
+          case 'zoom-reset': this.setZoom(1); break;
+          case 'undo': this.undo(); break;
+          case 'redo': this.redo(); break;
+          case 'save-png': this.saveAsPNG(); break;
+          case 'print': window.print(); break;
+          case 'add-text': this.addTextNode(); break;
+        }
+      },
+      
+      // --- ツールと設定の管理 ---
+      setActiveTool(tool) {
+        this.state.tool = tool;
+        this.updateUI();
+      },
 
-  /**
-   * ---- SETUP ----
-   */
-  function setupEventListeners() {
-    window.addEventListener('resize', resizeHandler);
-    window.addEventListener('orientationchange', () => setTimeout(resizeHandler, 50));
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(resizeHandler, 50); });
+      updateSetting(element, value) {
+        const key = element.dataset.setting;
+        const tool = this.state.tool;
+        if (key === 'grid') {
+            this.state.settings.grid = value || (element.checked ? 'true' : 'false');
+            this.drawGrid();
+        } else {
+            const toolSettings = this.state.settings[tool];
+            if (!toolSettings) return;
+            toolSettings[key] = value || element.value;
+        }
+        this.updateUI();
+      },
 
-    // Topbar
-    DOM.ui.btnZoomIn.addEventListener('click', () => setZoom(state.zoom + 0.1));
-    DOM.ui.btnZoomOut.addEventListener('click', () => setZoom(state.zoom - 0.1));
-    DOM.ui.btnZoomReset.addEventListener('click', () => setZoom(1));
-    DOM.ui.btnUndo.addEventListener('click', async () => {
-        if (!state.history.length) return;
-        const current = { url: DOM.canvas.paint.toDataURL(), texts: DOM.textLayer.innerHTML };
-        const prev = state.history.pop();
-        state.redoStack.push(current);
-        await restoreFromSnapshot(prev);
-    });
-    DOM.ui.btnRedo.addEventListener('click', async () => {
-        const next = state.redoStack.pop();
-        if (!next) return;
-        const current = { url: DOM.canvas.paint.toDataURL(), texts: DOM.textLayer.innerHTML };
-        state.history.push(current);
-        await restoreFromSnapshot(next);
-    });
+      getCurrentSettings() {
+        return this.state.settings[this.state.tool] || {};
+      },
 
-    // Toolbar
-    DOM.toolRail.addEventListener('click', (e) => {
-      const btn = e.target.closest('.tool');
-      if (!btn) return;
-      const tool = btn.dataset.tool;
-      if (tool === 'toggle') {
-        const isCollapsed = DOM.sidebar.toggleAttribute('data-collapsed');
-        btn.setAttribute('aria-expanded', !isCollapsed);
-      } else if (tool === 'settings') {
-        const isVisible = DOM.panel.toggleAttribute('data-visible');
-        btn.setAttribute('data-active', isVisible);
-        btn.setAttribute('aria-expanded', isVisible);
-      } else {
-        setActiveTool(tool);
-      }
-    });
+      // --- UI更新 ---
+      updateUI() {
+        // Toolbar
+        this.dom.toolbar.querySelectorAll('[data-tool]').forEach(btn => {
+          btn.dataset.active = (btn.dataset.tool === this.state.tool);
+        });
+
+        // Settings Panel
+        const open = this.dom.body.dataset.settingsOpen === 'true';
+        if (open) {
+            this.dom.settingsPanel.querySelectorAll('.settings-group[data-tool-binding]').forEach(group => {
+                const binding = group.dataset.toolBinding;
+                const show = binding === 'all' || binding.includes(this.state.tool);
+                group.style.display = show ? 'flex' : 'none';
+            });
+        }
+        
+        // Settings Values
+        const settings = { ...this.state.settings.pen, ...this.state.settings.marker, ...this.state.settings.eraser, ...this.getCurrentSettings()};
+        this.dom.settingsPanel.querySelectorAll('[data-setting]').forEach(el => {
+            const key = el.dataset.setting;
+            const value = this.getCurrentSettings()[key] ?? this.state.settings[key];
+            if (!value) return;
+
+            if (el.type === 'range') el.value = value;
+            if (el.type === 'color') el.value = value;
+            if (el.classList.contains('btn-group')) {
+                el.querySelectorAll('button').forEach(btn => btn.dataset.active = (btn.dataset.value === value));
+            }
+        });
+        
+        // Value labels
+        this.dom.settingsPanel.querySelectorAll('.value-label[data-value-for]').forEach(label => {
+            const key = label.dataset.valueFor;
+            const s = this.getCurrentSettings();
+            if (s[key]) {
+                label.textContent = s[key] + (key === 'opacity' ? '%' : '');
+            }
+        });
+
+        // Zoom label
+        this.dom.zoomResetBtn.textContent = `${Math.round(this.state.zoom * 100)}%`;
+      },
+      
+      toggleSettingsPanel() {
+        const isOpen = this.dom.body.dataset.settingsOpen === 'true';
+        this.dom.body.dataset.settingsOpen = !isOpen;
+        this.updateUI();
+        // Wait for CSS transition before resizing
+        setTimeout(() => this.resizeCanvas(), 300);
+      },
+
+      // --- キャンバス操作 ---
+      resizeCanvas() {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = this.dom.canvases.paint.getBoundingClientRect();
+        Object.values(this.dom.canvases).forEach(canvas => {
+          canvas.width = rect.width * dpr;
+          canvas.height = rect.height * dpr;
+        });
+        this.dom.ctx.paint.scale(dpr, dpr);
+        this.dom.ctx.grid.scale(dpr, dpr);
+        this.dom.ctx.guide.scale(dpr, dpr);
+        this.drawGrid();
+        this.redrawPaintCanvas();
+      },
+
+      applyViewport() {
+        const { x, y } = this.state.pan;
+        const z = this.state.zoom;
+        this.dom.viewport.style.transform = `translate(${x}px, ${y}px) scale(${z})`;
+      },
+
+      setZoom(newZoom) {
+        this.state.zoom = Math.max(0.1, Math.min(10, newZoom));
+        this.applyViewport();
+        this.updateUI();
+      },
+
+      // --- 描画ロジック ---
+      getPoint(e) {
+        const rect = this.dom.canvases.paint.getBoundingClientRect();
+        return {
+          x: (e.clientX - rect.left) / this.state.zoom,
+          y: (e.clientY - rect.top) / this.state.zoom
+        };
+      },
+
+      onPointerDown(e) {
+        if (e.button !== 0) return;
+        this.state.isDrawing = true;
+        
+        if (this.state.tool === 'pan' || e.shiftKey) {
+            this.state.isPanning = true;
+            this.dom.body.style.cursor = 'grabbing';
+            return;
+        }
+
+        this.saveHistory();
+        const p = this.getPoint(e);
+        this.state.startPoint = p;
+
+        const { tool } = this.state;
+        if (tool === 'pen' || tool === 'marker' || tool === 'eraser') {
+            const ctx = this.dom.ctx.paint;
+            this.prepareContext(ctx);
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+        }
+      },
+      
+      onPointerMove(e) {
+        if (!this.state.isDrawing) return;
+        const p = this.getPoint(e);
+        
+        if (this.state.isPanning) {
+            this.state.pan.x += e.movementX;
+            this.state.pan.y += e.movementY;
+            this.applyViewport();
+            return;
+        }
+        
+        const { tool } = this.state;
+        const settings = this.getCurrentSettings();
+        if (tool === 'pen' || tool === 'marker' || tool === 'eraser') {
+            if (settings.straight === 'true') {
+              this.drawGuideLine(this.state.startPoint, p);
+            } else {
+              this.dom.ctx.paint.lineTo(p.x, p.y);
+              this.dom.ctx.paint.stroke();
+            }
+        }
+      },
+
+      onPointerUp(e) {
+        this.dom.ctx.guide.clearRect(0, 0, this.dom.canvases.guide.width, this.dom.canvases.guide.height);
+        if (this.state.isPanning) {
+            this.dom.body.style.cursor = 'default';
+        }
+        
+        const { tool } = this.state;
+        const settings = this.getCurrentSettings();
+        if (this.state.isDrawing && !this.state.isPanning && settings.straight === 'true') {
+             const p = this.getPoint(e);
+             this.dom.ctx.paint.lineTo(p.x, p.y);
+             this.dom.ctx.paint.stroke();
+        }
+        
+        this.state.isDrawing = false;
+        this.state.isPanning = false;
+        this.state.startPoint = null;
+      },
+
+      prepareContext(ctx) {
+        const { tool } = this.state;
+        const s = this.getCurrentSettings();
+        ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
+        ctx.strokeStyle = s.color || '#000000';
+        ctx.lineWidth = s.size;
+        ctx.lineCap = s.lineCap || 'round';
+        ctx.globalAlpha = (s.opacity || 100) / 100;
+      },
+      
+      drawGuideLine(start, end) {
+        const ctx = this.dom.ctx.guide;
+        ctx.clearRect(0, 0, this.dom.canvases.guide.width, this.dom.canvases.guide.height);
+        this.prepareContext(ctx);
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      },
+      
+      drawGrid() {
+        if (this.state.settings.grid !== 'true') {
+            this.dom.ctx.grid.clearRect(0, 0, this.dom.canvases.grid.width, this.dom.canvases.grid.height);
+            return;
+        }
+        const ctx = this.dom.ctx.grid;
+        const step = 20; // in CSS pixels
+        ctx.clearRect(0, 0, this.dom.canvases.grid.width, this.dom.canvases.grid.height);
+        ctx.strokeStyle = "rgba(156, 167, 181, 0.2)";
+        ctx.lineWidth = 0.5;
+        for (let x = 0; x < this.dom.canvases.grid.width; x += step) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, this.dom.canvases.grid.height);
+            ctx.stroke();
+        }
+        for (let y = 0; y < this.dom.canvases.grid.height; y += step) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(this.dom.canvases.grid.width, y);
+            ctx.stroke();
+        }
+      },
+      
+      addTextNode() {
+          const node = document.createElement('div');
+          node.className = 'text-node';
+          node.contentEditable = 'true';
+          node.textContent = 'テキストを入力';
+          const { x, y } = this.state.pan;
+          const z = this.state.zoom;
+          
+          // Place in the center of the current view
+          const rect = this.dom.viewport.getBoundingClientRect();
+          node.style.left = `${(rect.width / 2 - x) / z}px`;
+          node.style.top = `${(rect.height / 2 - y) / z}px`;
+
+          this.dom.textLayer.appendChild(node);
+          node.focus();
+      },
+
+      // ---履歴 (Undo/Redo)---
+      saveHistory() {
+        const data = this.dom.ctx.paint.getImageData(0, 0, this.dom.canvases.paint.width, this.dom.canvases.paint.height);
+        this.state.history.push(data);
+        if (this.state.history.length > 30) this.state.history.shift();
+        this.state.redoStack = []; // Clear redo stack
+      },
+
+      undo() {
+        if (this.state.history.length === 0) return;
+        const currentData = this.dom.ctx.paint.getImageData(0, 0, this.dom.canvases.paint.width, this.dom.canvases.paint.height);
+        this.state.redoStack.push(currentData);
+        
+        const lastData = this.state.history.pop();
+        this.dom.ctx.paint.putImageData(lastData, 0, 0);
+      },
+
+      redo() {
+        if (this.state.redoStack.length === 0) return;
+        const currentData = this.dom.ctx.paint.getImageData(0, 0, this.dom.canvases.paint.width, this.dom.canvases.paint.height);
+        this.state.history.push(currentData);
+        
+        const nextData = this.state.redoStack.pop();
+        this.dom.ctx.paint.putImageData(nextData, 0, 0);
+      },
+      
+      redrawPaintCanvas() {
+          const lastState = this.state.history.at(-1);
+          if (lastState) {
+              this.dom.ctx.paint.putImageData(lastState, 0, 0);
+          }
+      },
+      
+      // --- 出力 ---
+      saveAsPNG() {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = this.dom.canvases.paint.width;
+        tempCanvas.height = this.dom.canvases.paint.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // Background
+        tempCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-deep').trim();
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        
+        // Grid
+        if (this.state.settings.grid === 'true') {
+          tempCtx.drawImage(this.dom.canvases.grid, 0, 0);
+        }
+        
+        // Drawing
+        tempCtx.drawImage(this.dom.canvases.paint, 0, 0);
+        
+        const link = document.createElement('a');
+        link.download = 'note-link.png';
+        link.href = tempCanvas.toDataURL('image/png');
+        link.click();
+      },
+    };
     
-    // Panel
-    DOM.panel.addEventListener('input', (e) => {
-        const tool = state.currentTool;
-        if (!state.perToolSettings[tool]) state.perToolSettings[tool] = {};
-        const settings = state.perToolSettings[tool];
-        settings.color = DOM.ui.color.value;
-        settings.size = Number(DOM.ui.size.value);
-        settings.alpha = Number(DOM.ui.alpha.value) / 100;
-        settings.cap = DOM.ui.cap.value;
-        settings.straight = DOM.ui.straight.checked;
-        syncUIToState();
-        if (e.target.closest('[data-panel-row="grid"]')) drawGrid();
-    });
-    DOM.ui.panelClose.addEventListener('click', () => {
-        DOM.panel.removeAttribute('data-visible');
-        const settingsBtn = $('.tool[data-tool="settings"]');
-        settingsBtn.removeAttribute('data-active');
-        settingsBtn.setAttribute('aria-expanded', 'false');
-    });
-    handlePanelDrag(DOM.panel, DOM.panelHandle);
-    
-    // Canvas pointer events
-    DOM.canvas.paint.addEventListener('pointerdown', handlePointerDown);
-    DOM.canvas.paint.addEventListener('pointermove', handlePointerMove);
-    DOM.canvas.paint.addEventListener('pointerup', handlePointerUp);
-    DOM.canvas.paint.addEventListener('pointerleave', handlePointerUp);
-    
-    // Keyboard
-    window.addEventListener('keydown', e => { if (e.key === CONSTANTS.KEY.SHIFT) state.isShiftPressed = true; });
-    window.addEventListener('keyup', e => { if (e.key === CONSTANTS.KEY.SHIFT) state.isShiftPressed = false; });
-    
-    // Text buttons
-    DOM.ui.btnTextAdd.addEventListener('click', addTextNode);
-    DOM.ui.btnTextBold.addEventListener('click', () => styleSelectedText('b'));
-    DOM.ui.btnTextIt.addEventListener('click', () => styleSelectedText('i'));
-    DOM.ui.btnTextBoxDel.addEventListener('click', () => {
-        const sel = window.getSelection();
-        if (!sel.rangeCount) return;
-        const node = sel.anchorNode.parentElement.closest('.note-text');
-        if (node) node.remove();
-    });
-
-    // Export
-    DOM.ui.btnPrint.addEventListener('click', () => window.print());
-    DOM.ui.btnPng.addEventListener('click', () => {
-      getCompositeCanvas().toBlob(blob => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'note-link.png';
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      });
-    });
-  }
-
-  function setZoom(newZoom) {
-    state.zoom = Math.max(0.2, Math.min(5, newZoom));
-    DOM.ui.btnZoomReset.textContent = `${Math.round(state.zoom * 100)}%`;
-    updateViewportTransform();
-    setTimeout(resizeHandler, 0);
-  }
-  
-  /**
-   * ---- INITIALIZE ----
-   */
-  function init() {
-    DOM.ui.verText.textContent = `NOTE LINK ${CONSTANTS.APP_VERSION}`;
-    DOM.ui.buildText.textContent = `build: ${CONSTANTS.BUILD_ID}`;
-    document.title = `NOTE LINK — ${CONSTANTS.APP_VERSION}`;
-
-    setupEventListeners();
-    updateViewportTransform();
-    setTimeout(resizeHandler, 0);
-    setActiveTool(CONSTANTS.TOOLS.PEN);
-  }
-
-  init();
-</script>
+    // アプリケーションの起動
+    document.addEventListener('DOMContentLoaded', () => app.init());
+  </script>
 </body>
 </html>
