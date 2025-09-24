@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>NOTE LINK — V0.9.0-REFACTORED</title>
+<title>NOTE LINK — V0.9.1-FIXED</title>
 <style>
   :root {
     --ink: #e6f1ff; --ink-dim: #9bd6e9; --bg: #0b1020;
@@ -136,7 +136,7 @@
 <body>
 
 <header class="topbar">
-  <strong id="verText">NOTE LINK V0.9.0</strong>
+  <strong id="verText">NOTE LINK V0.9.1</strong>
   <span class="topbar__spacer"></span>
   <button class="topbar__btn" id="btnZoomOut" aria-label="ズームアウト">−</button>
   <button class="topbar__btn" id="btnZoomReset">100%</button>
@@ -208,12 +208,12 @@
    * ---- CONSTANTS ----
    */
   const CONSTANTS = {
-    APP_VERSION: 'V0.9.0',
-    BUILD_ID: 'refactored-250924',
+    APP_VERSION: 'V0.9.1',
+    BUILD_ID: 'drag-fix-250924',
     DPR: Math.max(1, devicePixelRatio || 1),
     HISTORY_LIMIT: 20,
-    PALM_REJECTION_MS: 1200, // Pen使用後、この時間内のタッチを無視
-    PALM_REJECTION_AREA: 1200, // この面積以上のタッチを無視
+    PALM_REJECTION_MS: 1200,
+    PALM_REJECTION_AREA: 1200,
     TOOLS: {
       PEN: 'pen', MARKER: 'marker', ERASER: 'eraser', HAND: 'hand', KEYBOARD: 'keyboard',
     },
@@ -308,7 +308,6 @@
       canvas.style.height = `${canvasH * state.zoom}px`;
     }
     drawGrid();
-    // NOTE: On resize, canvas content is cleared. A more robust solution would restore it.
   }
 
   function syncUIToState() {
@@ -320,7 +319,6 @@
     DOM.ui.alphaVal.textContent = `${Math.round((s.alpha ?? 1) * 100)}%`;
     DOM.ui.cap.value = s.cap || 'butt';
     DOM.ui.straight.checked = s.straight || false;
-    // ... sync other UI elements ...
   }
   
   function updateUIVisibility() {
@@ -489,22 +487,14 @@
   function styleSelectedText(tag) {
     const selection = window.getSelection();
     if (!selection.rangeCount || selection.isCollapsed) return;
-    
     const range = selection.getRangeAt(0);
-    const selectedText = range.toString();
-    if (!selectedText) return;
-    
-    const parentNode = range.commonAncestorContainer;
-    if (!DOM.textLayer.contains(parentNode)) return; // Only act on text layer
+    if (!DOM.textLayer.contains(range.commonAncestorContainer)) return;
     
     const element = document.createElement(tag);
     try {
         range.surroundContents(element);
     } catch (e) {
-        // Fallback for complex selections (e.g., across multiple blocks)
-        console.warn('Cannot surround contents, using simpler method.', e);
-        // A more robust implementation would handle splitting nodes.
-        // For this app, we can assume simple text styling.
+        console.warn('Cannot surround contents:', e);
     }
     selection.removeAllRanges();
   }
@@ -611,37 +601,50 @@
     return false;
   }
   
+  /**
+   * [MODIFIED] Makes the settings panel draggable.
+   * Listens for mouse movement on the whole document during a drag
+   * to prevent the panel from "letting go" if the cursor moves too fast.
+   */
   function handlePanelDrag(panel, handle) {
-    let isDragging = false, pointerId, startX, startY, offsetX, offsetY;
-    const onDown = (e) => {
-        if (e.button !== 0 || e.target.closest('.panel__close-btn')) return;
-        isDragging = true;
-        pointerId = e.pointerId;
-        handle.setPointerCapture(pointerId);
-        startX = e.clientX; startY = e.clientY;
-        const rect = panel.getBoundingClientRect();
-        offsetX = rect.left; offsetY = rect.top;
-        handle.style.cursor = 'grabbing';
+    let isDragging = false, startX = 0, startY = 0, offsetX = 0, offsetY = 0;
+
+    const onPointerMove = (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const newX = offsetX + (e.clientX - startX);
+      const newY = offsetY + (e.clientY - startY);
+      const topbarHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h'));
+
+      panel.style.left = `${Math.max(56, newX)}px`;
+      panel.style.top = `${Math.max(topbarHeight + 6, newY)}px`;
     };
-    const onMove = (e) => {
-        if (!isDragging || e.pointerId !== pointerId) return;
-        const newX = offsetX + (e.clientX - startX);
-        const newY = offsetY + (e.clientY - startY);
-        const topbarHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h'));
-        panel.style.left = `${Math.max(56, newX)}px`;
-        panel.style.top = `${Math.max(topbarHeight + 6, newY)}px`;
+
+    const onPointerUp = () => {
+      isDragging = false;
+      handle.style.cursor = 'grab';
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
     };
-    const onUp = (e) => {
-        if (e.pointerId !== pointerId) return;
-        isDragging = false;
-        try { handle.releasePointerCapture(pointerId); } catch {}
-        handle.style.cursor = 'grab';
+
+    const onPointerDown = (e) => {
+      if (e.button !== 0 || e.target.closest('.panel__close-btn')) return;
+      
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = panel.getBoundingClientRect();
+      offsetX = rect.left;
+      offsetY = rect.top;
+      handle.style.cursor = 'grabbing';
+      
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', onPointerUp);
     };
-    handle.addEventListener('pointerdown', onDown);
-    handle.addEventListener('pointermove', onMove);
-    handle.addEventListener('pointerup', onUp);
-    handle.addEventListener('pointercancel', onUp);
+
+    handle.addEventListener('pointerdown', onPointerDown);
   }
+
 
   /**
    * ---- EXPORT / SHARE ----
@@ -658,8 +661,6 @@
         if (DOM.ui.gridOn.checked) ctx.drawImage(DOM.canvas.grid, 0, 0);
         ctx.drawImage(DOM.canvas.paint, 0, 0);
 
-        // This is a simplified text rendering. It won't preserve rich text (bold/italic).
-        // A full solution would require parsing the innerHTML of each note-text.
         const textNodes = DOM.textLayer.querySelectorAll('.note-text');
         textNodes.forEach(node => {
             const nodeRect = node.getBoundingClientRect();
@@ -670,13 +671,11 @@
             
             ctx.fillStyle = style.color || '#eaf3ff';
             ctx.font = `${parseInt(style.fontSize, 10) * CONSTANTS.DPR}px ${style.fontFamily}`;
-            // Simple text rendering, split by lines
             const lines = node.textContent.trim().split('\n');
             lines.forEach((line, index) => {
                 ctx.fillText(line, x, y + (parseInt(style.fontSize, 10) * (index + 1) * CONSTANTS.DPR));
             });
         });
-        
         return outCanvas;
     }
 
@@ -729,14 +728,12 @@
         const tool = state.currentTool;
         if (!state.perToolSettings[tool]) state.perToolSettings[tool] = {};
         const settings = state.perToolSettings[tool];
-
         settings.color = DOM.ui.color.value;
         settings.size = Number(DOM.ui.size.value);
         settings.alpha = Number(DOM.ui.alpha.value) / 100;
         settings.cap = DOM.ui.cap.value;
         settings.straight = DOM.ui.straight.checked;
-        
-        syncUIToState(); // To update text values
+        syncUIToState();
         if (e.target.closest('[data-panel-row="grid"]')) drawGrid();
     });
     DOM.ui.panelClose.addEventListener('click', () => {
@@ -751,7 +748,7 @@
     DOM.canvas.paint.addEventListener('pointerdown', handlePointerDown);
     DOM.canvas.paint.addEventListener('pointermove', handlePointerMove);
     DOM.canvas.paint.addEventListener('pointerup', handlePointerUp);
-    DOM.canvas.paint.addEventListener('pointerleave', handlePointerUp); // End drawing if pointer leaves
+    DOM.canvas.paint.addEventListener('pointerleave', handlePointerUp);
     
     // Keyboard
     window.addEventListener('keydown', e => { if (e.key === CONSTANTS.KEY.SHIFT) state.isShiftPressed = true; });
@@ -786,7 +783,6 @@
     state.zoom = Math.max(0.2, Math.min(5, newZoom));
     DOM.ui.btnZoomReset.textContent = `${Math.round(state.zoom * 100)}%`;
     updateViewportTransform();
-    // A slight delay can help browsers catch up with layout changes before resizing canvas
     setTimeout(resizeHandler, 0);
   }
   
