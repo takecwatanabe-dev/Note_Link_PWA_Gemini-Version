@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>Note Link [v5.1]</title>
+  <title>Note Link [v5.2]</title>
   <style>
     :root {
       --bg-deep: #2c2c2c; --bg-main: #f0f0f0; --bg-light: #ffffff;
@@ -96,7 +96,7 @@
   </div>
 <script type="module">
   const app = {
-    VERSION: 'v5.1',
+    VERSION: 'v5.2',
     dom: {},
     state: {
       tool: 'pen', dpr: 1, isDrawing: false,
@@ -105,7 +105,7 @@
       history: [], redoStack: [], currentStroke: null,
       settings: {
         pen: { color: '#1a1a1a', size: 5, lineCap: 'round' },
-        eraser: { size: 40, color: '#f0f0f0', lineCap: 'round'},
+        eraser: { size: 40, lineCap: 'round'},
       },
       desktopPanelExpanded: true,
     },
@@ -141,7 +141,7 @@
     },
     
     setActiveTool(tool) { this.state.tool = tool; this.updateUI(); },
-    
+
     updateSettingFromElement(element) {
         if (!element) return;
         const key = element.dataset.setting; const value = element.value;
@@ -166,17 +166,25 @@
     
     setupCanvas() {
       this.state.dpr = window.devicePixelRatio || 1;
-      const rect = this.dom.canvasContainer.getBoundingClientRect();
-      this.dom.canvas.width = rect.width * this.state.dpr;
-      this.dom.canvas.height = rect.height * this.state.dpr;
+      // Use offsetWidth/Height to get dimensions independent of browser zoom
+      const rect = this.dom.canvasContainer;
+      const width = rect.offsetWidth;
+      const height = rect.offsetHeight;
+
+      this.dom.canvas.width = width * this.state.dpr;
+      this.dom.canvas.height = height * this.state.dpr;
+      
+      this.dom.canvas.style.width = `${width}px`;
+      this.dom.canvas.style.height = `${height}px`;
+
       this.redrawAll();
     },
 
     getCanvasCoordinates(pointerEvent) {
         const rect = this.dom.canvas.getBoundingClientRect();
         return {
-            x: (pointerEvent.clientX - rect.left - this.state.pan.x) / this.state.zoom,
-            y: (pointerEvent.clientY - rect.top - this.state.pan.y) / this.state.zoom,
+            x: (pointerEvent.clientX - rect.left) / this.state.zoom - this.state.pan.x,
+            y: (pointerEvent.clientY - rect.top) / this.state.zoom - this.state.pan.y,
         };
     },
 
@@ -229,20 +237,26 @@
     
     zoomAt(clientX, clientY, zoomFactor) {
         const rect = this.dom.canvas.getBoundingClientRect();
-        const worldPos = this.getCanvasCoordinates({ clientX, clientY });
+        const worldX = (clientX - rect.left) / this.state.zoom - this.state.pan.x;
+        const worldY = (clientY - rect.top) / this.state.zoom - this.state.pan.y;
+        
         const newZoom = Math.max(0.1, Math.min(10, this.state.zoom * zoomFactor));
-        this.state.pan.x = (clientX - rect.left) / this.state.zoom - worldPos.x;
-        this.state.pan.y = (clientY - rect.top) / this.state.zoom - worldPos.y;
+
+        this.state.pan.x = (clientX - rect.left) / newZoom - worldX;
+        this.state.pan.y = (clientY - rect.top) / newZoom - worldY;
         this.state.zoom = newZoom;
+        
         this.redrawAll();
     },
     
     redrawAll() {
       const ctx = this.dom.ctx; const { dpr, zoom, pan } = this.state;
       ctx.save();
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // Reset transform
-      ctx.clearRect(0, 0, this.dom.canvas.width / dpr, this.dom.canvas.height / dpr);
+      // Use setTransform for a clean slate, applying DPR scaling
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, this.dom.canvas.width, this.dom.canvas.height);
       
+      // Apply pan and zoom to the context
       ctx.translate(pan.x, pan.y);
       ctx.scale(zoom, zoom);
       
@@ -258,7 +272,7 @@
       ctx.beginPath();
       const settings = this.state.settings[stroke.tool] || this.state.settings.pen;
       ctx.strokeStyle = settings.color;
-      ctx.lineWidth = settings.size / this.state.zoom;
+      ctx.lineWidth = settings.size / this.state.zoom; // Keep line width visually consistent
       ctx.lineCap = settings.lineCap;
       ctx.globalCompositeOperation = stroke.tool === 'eraser' ? 'destination-out' : 'source-over';
       
