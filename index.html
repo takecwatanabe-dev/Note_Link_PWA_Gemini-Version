@@ -3,22 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>Note Link [v4.1 Stable Core]</title>
+  <title>Note Link [v4.2 Core]</title>
   <style>
     :root {
       --bg-deep: #2c2c2c; --bg-main: #f0f0f0; --bg-light: #ffffff;
       --ink-main: #1a1a1a; --ink-dim: #5c5c5c;
-      --accent-blue: #007aff;
-      --border-color: #d1d1d6;
-      --topbar-height: 48px; --side-panel-collapsed-w: 52px;
-      --side-panel-expanded-w: 280px; --toolbar-height-mobile: 60px;
+      --border-color: #d1d1d6; --topbar-height: 48px;
     }
     *, *::before, *::after { box-sizing: border-box; }
     html, body {
       margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden;
       background-color: var(--bg-deep); color: var(--ink-main);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      overscroll-behavior: none;
     }
     .topbar {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
@@ -26,99 +22,58 @@
       padding: 0 16px; background-color: var(--bg-light); color: var(--ink-main);
       border-bottom: 1px solid var(--border-color);
     }
-    .topbar-title { font-weight: 600; font-size: 16px; flex-shrink: 0; }
-    .topbar-spacer { flex-grow: 1; min-width: 16px; }
-    .topbar-group { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-    .topbar-btn { display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 12px; background-color: #e5e5ea; border: 1px solid var(--border-color); border-radius: 6px; color: var(--ink-main); font-size: 14px; cursor: pointer; white-space: nowrap; }
-    .icon-btn { padding: 0; width: 32px; } .icon-btn svg { width: 18px; height: 18px; }
-
-    .main-content { position: fixed; top: var(--topbar-height); right: 0; bottom: 0; left: 0; padding: 20px; display: grid; place-items: center; }
-    .canvas-container { width: 100%; height: 100%; box-shadow: 0 4px 16px rgba(0,0,0,0.2); position: relative; }
-    .app-canvas { position: absolute; inset: 0; background-color: var(--bg-main); }
-    #paint-canvas { touch-action: none; cursor: crosshair; }
-    
-    @media (min-width: 1024px) {
-      .main-content { left: var(--side-panel-collapsed-w); }
-      .side-panel { position: fixed; top: var(--topbar-height); left: 0; bottom: 0; z-index: 50; width: var(--side-panel-collapsed-w); background-color: var(--bg-light); border-right: 1px solid var(--border-color); display: flex; transition: width 0.3s ease-in-out; }
-      body[data-panel-expanded="true"] .side-panel { width: var(--side-panel-expanded-w); }
-      .side-panel__tools { width: var(--side-panel-collapsed-w); padding: 8px 0; display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; }
-      .tool-btn { width: 40px; height: 40px; display: grid; place-items: center; border: none; background-color: transparent; border-radius: 8px; color: var(--ink-dim); cursor: pointer; }
-      .tool-btn[data-active="true"] { background-color: var(--accent-blue); color: white; }
-      .tool-btn svg { width: 22px; height: 22px; pointer-events: none; }
-      .toolbar-separator { height: 1px; width: 80%; background-color: var(--border-color); margin: 8px 0; }
-      .side-panel__settings { width: calc(var(--side-panel-expanded-w) - var(--side-panel-collapsed-w)); padding: 16px; opacity: 0; transition: opacity 0.3s ease-in-out; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; pointer-events: none; }
-      body[data-panel-expanded="true"] .side-panel__settings { opacity: 1; pointer-events: auto; }
-      .settings-group { display: none; flex-direction: column; gap: 12px; }
-      .settings-group[data-visible="true"] { display: flex; }
-      .setting-row { display: flex; justify-content: space-between; align-items: center; }
-      .setting-row label { font-size: 14px; color: var(--ink-dim); }
-      .setting-row input[type="range"] { flex-grow: 1; margin: 0 12px; }
-      .mobile-ui { display: none; }
+    .topbar-title { font-weight: 600; font-size: 16px; }
+    .main-content {
+      position: fixed; top: var(--topbar-height); right: 0; bottom: 0; left: 0;
+      padding: 20px;
     }
-    @media (max-width: 1023px) {
-        .main-content { left: 0; padding: 0; }
-        .canvas-container { box-shadow: none; }
-        .side-panel, .topbar-group.desktop-only { display: none; }
-        .mobile-ui { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background-color: var(--bg-light); border-top: 1px solid var(--border-color); padding-bottom: env(safe-area-inset-bottom); }
-        .mobile-toolbar { height: var(--toolbar-height-mobile); display: flex; justify-content: space-around; align-items: center; }
-        .mobile-tool-btn { flex: 1; height: 100%; display: grid; place-items: center; background: none; border: none; color: var(--ink-dim); }
-        .mobile-tool-btn[data-active="true"] { color: var(--accent-blue); }
-        .mobile-tool-btn svg { width: 24px; height: 24px; }
+    .canvas-container {
+      width: 100%; height: 100%;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+    #paint-canvas {
+      display: block; width: 100%; height: 100%;
+      background-color: var(--bg-main);
+      cursor: crosshair;
+      touch-action: none;
     }
   </style>
 </head>
-<body data-panel-expanded="true">
+<body>
   <div class="app-container">
-    <header class="topbar"><div class="topbar-title" id="app-title">Note Link</div><span class="topbar-spacer"></span><div class="topbar-group"><button class="topbar-btn icon-btn" data-action="undo" title="元に戻す"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button><button class="topbar-btn icon-btn" data-action="redo" title="やり直し"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 0 9 9 9 9 0 0 0 6-2.3L21 13"/></svg></button></div></header>
-    <main class="main-content"><div class="canvas-container" id="canvas-container"><canvas id="paint-canvas" class="app-canvas"></canvas></div></main>
-    <aside class="side-panel">
-      <div class="side-panel__tools">
-        <button class="tool-btn" data-action="toggle-panel" title="設定パネルを開閉"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg></button><div class="toolbar-separator"></div>
-        <button class="tool-btn" data-tool="pen" title="ペン"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
-        <button class="tool-btn" data-tool="eraser" title="消しゴム"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 12 5 5"/></svg></button>
+    <header class="topbar">
+      <div class="topbar-title" id="app-title">Note Link</div>
+    </header>
+    <main class="main-content">
+      <div class="canvas-container">
+        <canvas id="paint-canvas"></canvas>
       </div>
-      <div class="side-panel__settings">
-        <div class="settings-group" data-binding="pen eraser">
-          <div class="setting-row"><label>サイズ</label><input type="range" min="1" max="100" data-setting="size"><span class="value-label" data-value-for="size"></span></div>
-        </div>
-      </div>
-    </aside>
-    <div class="mobile-ui">
-        <div class="mobile-toolbar">
-            <button class="mobile-tool-btn" data-tool="pen" title="ペン"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
-            <button class="mobile-tool-btn" data-tool="eraser" title="消しゴム"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 12 5 5"/></svg></button>
-        </div>
-    </div>
+    </main>
   </div>
 <script type="module">
   const app = {
-    VERSION: 'v4.1',
+    VERSION: 'v4.2 - Core Test',
     dom: {},
     state: {
-      tool: 'pen', dpr: 1, isDrawing: false,
-      history: [], redoStack: [],
-      settings: {
-        pen: { color: '#1a1a1a', size: 5, lineCap: 'round' },
-        eraser: { size: 40, color: '#f0f0f0', lineCap: 'round'}, // Eraser is just a pen with the background color
-      },
-      desktopPanelExpanded: true,
+      isDrawing: false,
+      dpr: 1,
+      color: '#1a1a1a',
+      size: 5,
     },
     
     init() {
       this.cacheDom();
       this.addEventListeners();
       this.setupCanvas();
-      this.setActiveTool('pen');
-      this.updateUI();
       this.dom.title.textContent = `Note Link ${this.VERSION}`;
+      console.log("Note Link Core Initialized");
     },
     
     cacheDom() {
       this.dom = {
-        body: document.body, canvasContainer: document.getElementById('canvas-container'),
-        title: document.getElementById('app-title'), canvas: document.getElementById('paint-canvas'),
+        title: document.getElementById('app-title'),
+        canvas: document.getElementById('paint-canvas'),
         ctx: document.getElementById('paint-canvas').getContext('2d'),
-        sidePanel: document.querySelector('.side-panel'),
       };
     },
     
@@ -129,76 +84,35 @@
       canvas.addEventListener('pointermove', this.onPointerMove.bind(this));
       canvas.addEventListener('pointerup', this.onPointerUp.bind(this));
       canvas.addEventListener('pointerleave', this.onPointerUp.bind(this));
-      document.body.addEventListener('click', e => {
-        const target = e.target.closest('[data-tool], [data-action]');
-        if (!target) return;
-        if (target.dataset.tool) this.setActiveTool(target.dataset.tool);
-        if (target.dataset.action) this.handleAction(target.dataset.action);
-      });
-      this.dom.sidePanel.addEventListener('input', e => this.updateSettingFromElement(e.target.closest('[data-setting]')));
-    },
-    
-    handleAction(action) {
-      switch (action) {
-        case 'toggle-panel': this.state.desktopPanelExpanded = !this.state.desktopPanelExpanded; this.updateUI(); break;
-        case 'undo': this.undo(); break;
-        case 'redo': this.redo(); break;
-      }
-    },
-    
-    setActiveTool(tool) {
-      this.state.tool = tool;
-      this.updateUI();
-    },
-
-    updateSettingFromElement(element) {
-        if (!element) return;
-        const key = element.dataset.setting;
-        const value = element.value;
-        const toolSettings = this.state.settings[this.state.tool];
-        if (toolSettings && key in toolSettings) {
-            toolSettings[key] = value;
-        }
-        this.updateUI();
-    },
-    
-    updateUI() {
-      this.dom.body.dataset.panelExpanded = this.state.desktopPanelExpanded;
-      document.querySelectorAll('[data-tool]').forEach(btn => {
-        btn.dataset.active = (btn.dataset.tool === this.state.tool);
-      });
-      // Update settings panel values
-      const settings = this.state.settings[this.state.tool];
-      if (settings && this.dom.sidePanel) {
-        this.dom.sidePanel.querySelectorAll('[data-setting]').forEach(el => {
-            el.value = settings[el.dataset.setting];
-        });
-        this.dom.sidePanel.querySelectorAll('[data-value-for]').forEach(label => {
-            label.textContent = settings[label.dataset.valueFor];
-        });
-      }
     },
     
     setupCanvas() {
-      this.saveHistory(); // Save before resizing
       this.state.dpr = window.devicePixelRatio || 1;
-      const rect = this.dom.canvasContainer.getBoundingClientRect();
+      const rect = this.dom.canvas.getBoundingClientRect();
+      
       this.dom.canvas.width = rect.width * this.state.dpr;
       this.dom.canvas.height = rect.height * this.state.dpr;
+      
       this.dom.ctx.scale(this.state.dpr, this.state.dpr);
-      this.redrawHistory();
+      
+      // NOTE: History is disabled, so we don't redraw here.
+      // The canvas will be blank on resize.
     },
     
     getCanvasCoordinates(e) {
       const rect = this.dom.canvas.getBoundingClientRect();
-      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
     },
     
     onPointerDown(e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      this.saveHistory(); // Save state before drawing a new line
       this.state.isDrawing = true;
+      
       const p = this.getCanvasCoordinates(e);
+      
       this.prepareContext();
       this.dom.ctx.beginPath();
       this.dom.ctx.moveTo(p.x, p.y);
@@ -206,7 +120,9 @@
     
     onPointerMove(e) {
       if (!this.state.isDrawing) return;
+      
       const p = this.getCanvasCoordinates(e);
+      
       this.dom.ctx.lineTo(p.x, p.y);
       this.dom.ctx.stroke();
     },
@@ -219,51 +135,10 @@
     
     prepareContext() {
       const ctx = this.dom.ctx;
-      const settings = this.state.settings[this.state.tool] || {};
-      ctx.strokeStyle = settings.color || '#000000';
-      ctx.lineWidth = settings.size || 5;
-      ctx.lineCap = settings.lineCap || 'round';
+      ctx.strokeStyle = this.state.color;
+      ctx.lineWidth = this.state.size;
+      ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-    },
-
-    saveHistory() {
-      const { width, height } = this.dom.canvas;
-      if (width > 0 && height > 0) {
-        if (this.state.history.length > 50) this.state.history.shift();
-        this.state.history.push(this.dom.ctx.getImageData(0, 0, width, height));
-        this.state.redoStack = [];
-      }
-    },
-
-    redrawHistory() {
-      const lastState = this.state.history.at(-1);
-      const ctx = this.dom.ctx;
-      const { width, height } = this.dom.canvas;
-      ctx.clearRect(0, 0, width, height); // Clear before redrawing
-      if (lastState) {
-        ctx.putImageData(lastState, 0, 0);
-      }
-    },
-
-    undo() {
-      if (this.state.history.length === 0) return;
-      const { width, height } = this.dom.canvas;
-      // Push the current state to redo stack before undoing
-      this.state.redoStack.push(this.dom.ctx.getImageData(0, 0, width, height));
-      const lastState = this.state.history.pop();
-      if (lastState) {
-        this.dom.ctx.putImageData(lastState, 0, 0);
-      }
-    },
-
-    redo() {
-      if (this.state.redoStack.length === 0) return;
-      // Push the current state back to history before redoing
-      this.saveHistory(); 
-      const nextState = this.state.redoStack.pop();
-      if (nextState) {
-        this.dom.ctx.putImageData(nextState, 0, 0);
-      }
     },
   };
 
