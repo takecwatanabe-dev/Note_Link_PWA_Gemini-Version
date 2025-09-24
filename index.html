@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>Note Link [v5.0]</title>
+  <title>Note Link [v5.1]</title>
   <style>
     :root {
       --bg-deep: #2c2c2c; --bg-main: #f0f0f0; --bg-light: #ffffff;
@@ -96,16 +96,16 @@
   </div>
 <script type="module">
   const app = {
-    VERSION: 'v5.0',
+    VERSION: 'v5.1',
     dom: {},
     state: {
-      tool: 'pen', zoom: 1, pan: { x: 0, y: 0 }, dpr: 1,
-      isDrawing: false, isPanning: false,
+      tool: 'pen', dpr: 1, isDrawing: false,
+      zoom: 1, pan: { x: 0, y: 0 },
       pointers: [], lastDist: 0, lastPanPoint: null,
       history: [], redoStack: [], currentStroke: null,
       settings: {
         pen: { color: '#1a1a1a', size: 5, lineCap: 'round' },
-        eraser: { size: 40, lineCap: 'round'},
+        eraser: { size: 40, color: '#f0f0f0', lineCap: 'round'},
       },
       desktopPanelExpanded: true,
     },
@@ -141,7 +141,7 @@
     },
     
     setActiveTool(tool) { this.state.tool = tool; this.updateUI(); },
-
+    
     updateSettingFromElement(element) {
         if (!element) return;
         const key = element.dataset.setting; const value = element.value;
@@ -174,10 +174,9 @@
 
     getCanvasCoordinates(pointerEvent) {
         const rect = this.dom.canvas.getBoundingClientRect();
-        // screen -> world
         return {
-            x: (pointerEvent.clientX - rect.left) / this.state.zoom - this.state.pan.x,
-            y: (pointerEvent.clientY - rect.top) / this.state.zoom - this.state.pan.y,
+            x: (pointerEvent.clientX - rect.left - this.state.pan.x) / this.state.zoom,
+            y: (pointerEvent.clientY - rect.top - this.state.pan.y) / this.state.zoom,
         };
     },
 
@@ -232,7 +231,6 @@
         const rect = this.dom.canvas.getBoundingClientRect();
         const worldPos = this.getCanvasCoordinates({ clientX, clientY });
         const newZoom = Math.max(0.1, Math.min(10, this.state.zoom * zoomFactor));
-        // Corrected pan calculation for zooming
         this.state.pan.x = (clientX - rect.left) / this.state.zoom - worldPos.x;
         this.state.pan.y = (clientY - rect.top) / this.state.zoom - worldPos.y;
         this.state.zoom = newZoom;
@@ -242,7 +240,7 @@
     redrawAll() {
       const ctx = this.dom.ctx; const { dpr, zoom, pan } = this.state;
       ctx.save();
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // Reset transform to DPR scaling
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // Reset transform
       ctx.clearRect(0, 0, this.dom.canvas.width / dpr, this.dom.canvas.height / dpr);
       
       ctx.translate(pan.x, pan.y);
@@ -260,7 +258,7 @@
       ctx.beginPath();
       const settings = this.state.settings[stroke.tool] || this.state.settings.pen;
       ctx.strokeStyle = settings.color;
-      ctx.lineWidth = settings.size / this.state.zoom; // Keep line width visually consistent
+      ctx.lineWidth = settings.size / this.state.zoom;
       ctx.lineCap = settings.lineCap;
       ctx.globalCompositeOperation = stroke.tool === 'eraser' ? 'destination-out' : 'source-over';
       
