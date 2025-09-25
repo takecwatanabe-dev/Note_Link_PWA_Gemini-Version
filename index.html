@@ -129,19 +129,19 @@
         <button id="loadBtn">ノートを読み込み</button>
 
         <button class="icon-btn" id="markerToolBtn" data-tool="marker">
-            <img src="./icons/marker_icon.png" alt="マーカー" class="tool-icon">
+            <img src="./marker_icon.png" alt="マーカー" class="tool-icon">
         </button>
         <button class="icon-btn" id="moveToolBtn" data-tool="move">
-            <img src="./icons/move_icon.png" alt="移動" class="tool-icon">
+            <img src="./move_icon.png" alt="移動" class="tool-icon">
         </button>
         <button class="icon-btn" id="undoBtn">
-            <img src="./icons/undo_icon.png" alt="元に戻す" class="tool-icon">
+            <img src="./undo_icon.png" alt="元に戻す" class="tool-icon">
         </button>
         <button class="icon-btn" id="redoBtn">
-            <img src="./icons/redo_icon.png" alt="やり直し" class="tool-icon">
+            <img src="./redo_icon.png" alt="やり直し" class="tool-icon">
         </button>
         <button class="icon-btn" id="toggleSettingsBtn">
-            <img src="./icons/panel_open_icon.png" alt="設定を開く/閉じる" class="tool-icon" id="settingsToggleIcon">
+            <img src="./panel_open_icon.png" alt="設定を開く/閉じる" class="tool-icon" id="settingsToggleIcon">
         </button>
     </div>
 
@@ -199,13 +199,15 @@
             toggleSettingsBtn.addEventListener('click', () => {
                 isSettingsPanelOpen = !isSettingsPanelOpen; // 状態を反転
                 if (isSettingsPanelOpen) {
-                    settingsToggleIcon.src = './icons/panel_close_icon.png';
+                    // ★★★ パスを修正しました ★★★
+                    settingsToggleIcon.src = './panel_close_icon.png';
                     settingsToggleIcon.alt = '設定を閉じる';
                     toggleSettingsBtn.classList.add('active-icon'); // 開いているときは光る
                     console.log('Settings Panel: Open');
                     // ここに設定パネルを開くロジックを実装
                 } else {
-                    settingsToggleIcon.src = './icons/panel_open_icon.png';
+                    // ★★★ パスを修正しました ★★★
+                    settingsToggleIcon.src = './panel_open_icon.png';
                     settingsToggleIcon.alt = '設定を開く';
                     toggleSettingsBtn.classList.remove('active-icon'); // 閉じているときは光らない
                     console.log('Settings Panel: Closed');
