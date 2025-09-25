@@ -1,294 +1,223 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>Note Link [v5.4 Final]</title>
-  <style>
-    :root {
-      --bg-deep: #2c2c2c; --bg-main: #f0f0f0; --bg-light: #ffffff;
-      --ink-main: #1a1a1a; --ink-dim: #5c5c5c;
-      --accent-blue: #007aff;
-      --border-color: #d1d1d6;
-      --topbar-height: 48px; --side-panel-collapsed-w: 52px;
-      --side-panel-expanded-w: 280px; --toolbar-height-mobile: 60px;
-    }
-    *, *::before, *::after { box-sizing: border-box; }
-    html, body {
-      margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden;
-      background-color: var(--bg-deep); color: var(--ink-main);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      overscroll-behavior: none;
-    }
-    .topbar {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      height: var(--topbar-height); display: flex; align-items: center;
-      padding: 0 16px; background-color: var(--bg-light); color: var(--ink-main);
-      border-bottom: 1px solid var(--border-color);
-    }
-    .topbar-title { font-weight: 600; font-size: 16px; flex-shrink: 0; }
-    .topbar-spacer { flex-grow: 1; min-width: 16px; }
-    .topbar-group { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-    .topbar-btn { display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 12px; background-color: #e5e5ea; border: 1px solid var(--border-color); border-radius: 6px; color: var(--ink-main); font-size: 14px; cursor: pointer; white-space: nowrap; }
-    .icon-btn { padding: 0; width: 32px; } .icon-btn svg { width: 18px; height: 18px; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Note Link アプリ#01</title>
+    <script src="./pdfjs-5.4.149-dist/build/pdf.js"></script>
 
-    .main-content { position: fixed; top: var(--topbar-height); right: 0; bottom: 0; left: 0; padding: 20px; display: grid; place-items: center; }
-    .canvas-container { width: 100%; height: 100%; box-shadow: 0 4px 16px rgba(0,0,0,0.2); position: relative; overflow: hidden; }
-    .canvas-viewport { position: absolute; inset: 0; transform-origin: 0 0; }
-    .app-canvas { position: absolute; inset: 0; background-color: var(--bg-main); }
-    #paint-canvas { touch-action: none; cursor: crosshair; }
-    body[data-tool="pan"] #paint-canvas { cursor: grab; }
-    body[data-tool="text"] #paint-canvas { cursor: text; }
-    .text-node { position: absolute; min-width: 20px; border: 1px dashed var(--border-color); border-radius: 4px; padding: 8px; background-color: rgba(255,255,255,0.8); font-size: 16px; white-space: pre-wrap; word-break: break-word; pointer-events: all; }
-    .text-node:focus { border-style: solid; border-color: var(--accent-blue); outline: none; background-color: var(--bg-light); }
-    
-    @media (min-width: 1024px) {
-      .main-content { left: var(--side-panel-collapsed-w); }
-      .side-panel { position: fixed; top: var(--topbar-height); left: 0; bottom: 0; z-index: 50; width: var(--side-panel-collapsed-w); background-color: var(--bg-light); border-right: 1px solid var(--border-color); display: flex; transition: width 0.3s ease-in-out; }
-      body[data-panel-expanded="true"] .side-panel { width: var(--side-panel-expanded-w); }
-      .side-panel__tools { width: var(--side-panel-collapsed-w); padding: 8px 0; display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; }
-      .tool-btn { width: 40px; height: 40px; display: grid; place-items: center; border: none; background-color: transparent; border-radius: 8px; color: var(--ink-dim); cursor: pointer; }
-      .tool-btn[data-active="true"] { background-color: var(--accent-blue); color: white; }
-      .tool-btn svg { width: 22px; height: 22px; pointer-events: none; }
-      .toolbar-separator { height: 1px; width: 80%; background-color: var(--border-color); margin: 8px 0; }
-      .side-panel__settings { width: calc(var(--side-panel-expanded-w) - var(--side-panel-collapsed-w)); padding: 16px; opacity: 0; transition: opacity 0.3s ease-in-out; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; pointer-events: none; }
-      body[data-panel-expanded="true"] .side-panel__settings { opacity: 1; pointer-events: auto; }
-      .settings-group { display: none; flex-direction: column; gap: 12px; }
-      .settings-group[data-visible="true"] { display: flex; }
-      .setting-row { display: flex; justify-content: space-between; align-items: center; }
-      .setting-row label { font-size: 14px; color: var(--ink-dim); }
-      .setting-row input[type="color"] { width: 32px; height: 32px; padding: 2px; border: 1px solid var(--border-color); border-radius: 6px; background-color: transparent; cursor: pointer; }
-      .setting-row input[type="range"] { flex-grow: 1; margin: 0 12px; }
-      .value-label { font-size: 14px; min-width: 40px; text-align: right; }
-      .mobile-ui { display: none; }
-    }
-    @media (max-width: 1023px) {
-        .main-content { left: 0; padding: 0; }
-        .canvas-container { box-shadow: none; }
-        .side-panel { display: none; }
-        .mobile-ui { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background-color: var(--bg-light); border-top: 1px solid var(--border-color); padding-bottom: env(safe-area-inset-bottom); }
-        .mobile-toolbar { height: var(--toolbar-height-mobile); display: flex; justify-content: space-around; align-items: center; }
-        .mobile-tool-btn { flex: 1; height: 100%; display: grid; place-items: center; background: none; border: none; color: var(--ink-dim); }
-        .mobile-tool-btn[data-active="true"] { color: var(--accent-blue); }
-        .mobile-tool-btn svg { width: 24px; height: 24px; }
-    }
-  </style>
+    <style>
+        /* ここにデザインのルール（CSS）を記述します。 */
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f2f5;
+        }
+        #appContainer {
+            position: relative;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #ccc; /* ノート領域を明確にするための枠線 */
+        }
+        #pdfCanvas {
+            display: block; /* 不要な余白を削除 */
+        }
+        #drawCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: crosshair; /* 描画中はカーソルを十字に */
+            z-index: 10; /* 描画CanvasをPDFの上にする */
+        }
+        #controls {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            display: flex;
+            flex-wrap: wrap; /* 要素が収まらない場合は折り返す */
+            gap: 10px; /* 要素間の隙間 */
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        #controls button, #controls input[type="file"], #controls select {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s; /* ホバー時のアニメーション */
+        }
+        #controls button {
+            background-color: #007bff;
+            color: white;
+        }
+        #controls button:hover {
+            background-color: #0056b3;
+        }
+        #controls input[type="file"] {
+            background-color: #6c757d;
+            color: white;
+            line-height: normal;
+        }
+        #controls input[type="file"]:hover {
+            background-color: #5a6268;
+        }
+        #pageNumber {
+            padding: 5px 10px;
+            background-color: #f0f2f5;
+            border-radius: 5px;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        /* アイコンボタン専用スタイル */
+        .icon-btn {
+            background: none; /* 背景色をなくす */
+            padding: 5px; /* パディングを調整 */
+            width: 40px; /* 幅を固定 */
+            height: 40px; /* 高さを固定 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid transparent; /* デフォルトで透明な枠線 */
+            box-shadow: none; /* デフォルトで影なし */
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .icon-btn:hover {
+            background-color: rgba(0, 0, 0, 0.1); /* ホバー時の背景色 */
+        }
+        .tool-icon {
+            width: 30px; /* アイコン画像のサイズ */
+            height: 30px;
+            object-fit: contain; /* アスペクト比を維持して収める */
+            filter: grayscale(100%) brightness(0); /* デフォルトで白黒にするか、元の画像による */
+            transition: filter 0.2s, text-shadow 0.2s, box-shadow 0.2s;
+        }
+        /* アクティブなアイコンに適用するスタイル */
+        .active-icon {
+            border-color: #00e6e6; /* 光る枠線 */
+            box-shadow: 0 0 8px #00e6e6, 0 0 12px #00e6e6; /* ネオンのような光る影 */
+            background-color: rgba(0, 230, 230, 0.1); /* 光る背景色 */
+        }
+        .active-icon .tool-icon {
+            filter: none; /* アクティブ時は元の色に戻す */
+        }
+    </style>
 </head>
-<body data-panel-expanded="true">
-  <div class="app-container">
-    <header class="topbar"><div class="topbar-title" id="app-title">Note Link</div><span class="topbar-spacer"></span><div class="topbar-group"><button class="topbar-btn" data-action="zoom-out" title="縮小">-</button><button class="topbar-btn" data-action="zoom-reset" title="ズームをリセット">100%</button><button class="topbar-btn" data-action="zoom-in" title="拡大">+</button></div><div class="topbar-group" style="margin-left: 16px;"><button class="topbar-btn icon-btn" data-action="undo" title="元に戻す"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button><button class="topbar-btn icon-btn" data-action="redo" title="やり直し"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 0 9 9 9 9 0 0 0 6-2.3L21 13"/></svg></button></div></header>
-    <main class="main-content"><div class="canvas-container" id="canvas-container"><div class="canvas-viewport" id="viewport"><canvas id="paint-canvas" class="app-canvas"></canvas><div id="text-layer" class="app-canvas" style="background:transparent; pointer-events:none;"></div></div></div></main>
-    <aside class="side-panel">
-      <div class="side-panel__tools">
-        <button class="tool-btn" data-action="toggle-panel" title="設定パネルを開閉"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg></button><div class="toolbar-separator"></div>
-        <button class="tool-btn" data-tool="pen" title="ペン"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
-        <button class="tool-btn" data-tool="marker" title="マーカー"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m13.5 6.5 4 4"/><path d="m21.5 14.5-9-9 4-4 9 9-4 4Z"/><path d="m14.5 21.5-9-9 4-4 9 9-4 4Z"/><path d="M5.5 12.5 3 15l-1.5 6.5 6.5-1.5 2.5-2.5"/></svg></button>
-        <button class="tool-btn" data-tool="eraser" title="消しゴム"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 12 5 5"/></svg></button>
-        <button class="tool-btn" data-tool="text" title="テキスト"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h14"/><path d="M12 3v18"/><path d="M10 18h4"/></svg></button>
-        <button class="tool-btn" data-tool="pan" title="移動"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15.5A2.5 2.5 0 0 0 6.5 18H18a2.5 2.5 0 0 0 2.5-2.5V12A2.5 2.5 0 0 0 18 9.5h-3.26a2.5 2.5 0 0 1-2.47-1.8L12 6.5V2.5"/><path d="m18 15-4-4"/><path d="m14 15-4-4"/></svg></button>
-      </div>
-      <div class="side-panel__settings">
-        <div class="settings-group" data-binding="pen marker"><div class="setting-row"><label>カラー</label><input type="color" data-setting="color" title="色の選択"></div><div class="setting-row"><label>サイズ</label><input type="range" min="1" max="100" data-setting="size" title="ブラシサイズ"><span class="value-label" data-value-for="size"></span></div><div class="setting-row" data-binding="marker"><label>不透明度</label><input type="range" min="5" max="100" step="5" data-setting="opacity" title="不透明度"><span class="value-label" data-value-for="opacity"></span></div></div>
-        <div class="settings-group" data-binding="eraser"><div class="setting-row"><label>サイズ</label><input type="range" min="2" max="200" data-setting="size" title="消しゴムサイズ"><span class="value-label" data-value-for="size"></span></div></div>
-      </div>
-    </aside>
-    <div class="mobile-ui">
-        <div class="mobile-toolbar">
-            <button class="mobile-tool-btn" data-tool="pen" title="ペン"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
-            <button class="mobile-tool-btn" data-tool="eraser" title="消しゴム"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 12 5 5"/></svg></button>
-            <button class="mobile-tool-btn" data-tool="pan" title="移動"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15.5A2.5 2.5 0 0 0 6.5 18H18a2.5 2.5 0 0 0 2.5-2.5V12A2.5 2.5 0 0 0 18 9.5h-3.26a2.5 2.5 0 0 1-2.47-1.8L12 6.5V2.5"/><path d="m18 15-4-4"/><path d="m14 15-4-4"/></svg></button>
-        </div>
+<body>
+
+    <div id="appContainer">
+        <canvas id="pdfCanvas"></canvas>
+        <canvas id="drawCanvas"></canvas>
     </div>
-  </div>
-<script type="module">
-  const app = {
-    VERSION: 'v5.4',
-    dom: {},
-    state: {
-      tool: 'pen', dpr: 1, isDrawing: false,
-      zoom: 1, pan: { x: 0, y: 0 },
-      pointers: [], lastDist: 0, lastPanPoint: null,
-      history: [], redoStack: [],
-      settings: {
-        pen: { color: '#1a1a1a', size: 5, lineCap: 'round', opacity: 1 },
-        marker: { color: '#007aff', size: 25, lineCap: 'butt', opacity: 0.4 },
-        eraser: { size: 40, lineCap: 'round' },
-      },
-      desktopPanelExpanded: true,
-    },
-    
-    init() { this.cacheDom(); this.addEventListeners(); this.setupCanvas(); this.setActiveTool('pen'); this.updateUI(); this.dom.title.textContent = `Note Link ${this.VERSION}`; },
-    
-    cacheDom() { this.dom = { body: document.body, canvasContainer: document.getElementById('canvas-container'), title: document.getElementById('app-title'), canvas: document.getElementById('paint-canvas'), ctx: document.getElementById('paint-canvas').getContext('2d'), viewport: document.getElementById('viewport'), textLayer: document.getElementById('text-layer'), sidePanel: document.querySelector('.side-panel'), zoomResetBtn: document.querySelector('[data-action="zoom-reset"]'), }; },
-    
-    addEventListeners() {
-      window.addEventListener('resize', () => this.setupCanvas());
-      const canvas = this.dom.canvas;
-      canvas.addEventListener('pointerdown', this.onPointerDown.bind(this));
-      canvas.addEventListener('pointermove', this.onPointerMove.bind(this));
-      canvas.addEventListener('pointerup', this.onPointerUp.bind(this));
-      canvas.addEventListener('pointercancel', this.onPointerUp.bind(this));
-      document.body.addEventListener('click', e => {
-        const target = e.target.closest('[data-tool], [data-action]'); if (!target) return;
-        if (target.dataset.tool) this.setActiveTool(target.dataset.tool);
-        if (target.dataset.action) this.handleAction(target.dataset.action);
-      });
-      this.dom.sidePanel.addEventListener('input', e => this.updateSettingFromElement(e.target.closest('[data-setting]')));
-    },
-    
-    handleAction(action) {
-      const center = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-      switch (action) {
-        case 'toggle-panel': this.state.desktopPanelExpanded = !this.state.desktopPanelExpanded; this.updateUI(); break;
-        case 'zoom-in': this.zoomAt(center.x, center.y, 1.25); break;
-        case 'zoom-out': this.zoomAt(center.x, center.y, 0.8); break;
-        case 'zoom-reset': this.state.zoom = 1; this.state.pan = { x: 0, y: 0 }; this.applyViewport(); this.redrawHistory(); break;
-        case 'undo': this.undo(); break; case 'redo': this.redo(); break;
-      }
-    },
-    
-    setActiveTool(tool) { this.state.tool = tool; this.updateUI(); },
-    
-    updateSettingFromElement(element) {
-        if (!element) return;
-        const key = element.dataset.setting; let value = element.value;
-        if (key === 'opacity') value /= 100;
-        const toolSettings = this.state.settings[this.state.tool];
-        if (toolSettings && key in toolSettings) { toolSettings[key] = value; }
-        this.updateUI();
-    },
-    
-    updateUI() {
-      this.dom.body.dataset.panelExpanded = this.state.desktopPanelExpanded;
-      document.querySelectorAll('[data-tool]').forEach(btn => btn.dataset.active = (btn.dataset.tool === this.state.tool));
-      if (this.dom.zoomResetBtn) this.dom.zoomResetBtn.textContent = `${Math.round(this.state.zoom * 100)}%`;
-      if (window.innerWidth > 1023) {
-        const settings = this.getCurrentSettings();
-        if (settings && this.dom.sidePanel) {
-          this.dom.sidePanel.querySelectorAll('.settings-group').forEach(group => group.dataset.visible = group.dataset.binding.includes(this.state.tool));
-          this.dom.sidePanel.querySelectorAll('[data-setting]').forEach(el => {
-            let value = settings[el.dataset.setting];
-            if (el.dataset.setting === 'opacity' && value) value *= 100;
-            el.value = value;
-          });
-          this.dom.sidePanel.querySelectorAll('.value-label[data-value-for]').forEach(label => {
-            let value = settings[label.dataset.valueFor];
-            if (label.dataset.valueFor === 'opacity' && value) value = Math.round(value * 100);
-            label.textContent = value + (label.dataset.valueFor === 'opacity' ? '%' : '');
-          });
-        }
-      }
-    },
-    
-    setupCanvas() {
-      this.saveHistory(false);
-      this.state.dpr = window.devicePixelRatio || 1;
-      const container = this.dom.canvasContainer;
-      const width = container.offsetWidth;
-      const height = container.offsetHeight;
-      
-      this.dom.canvas.width = width * this.state.dpr;
-      this.dom.canvas.height = height * this.state.dpr;
-      
-      this.dom.canvas.style.width = `${width}px`;
-      this.dom.canvas.style.height = `${height}px`;
-      
-      this.dom.ctx.scale(this.state.dpr, this.state.dpr);
-      this.redrawHistory();
-    },
-    
-    applyViewport() { this.dom.viewport.style.transform = `translate(${this.state.pan.x}px, ${this.state.pan.y}px) scale(${this.state.zoom})`; },
-    
-    getCanvasCoordinates(e) {
-      const rect = this.dom.canvas.getBoundingClientRect();
-      return {
-        x: (e.clientX - rect.left) / this.state.zoom,
-        y: (e.clientY - rect.top) / this.state.zoom
-      };
-    },
-    
-    onPointerDown(e) {
-      if (e.pointerType === 'mouse' && e.button !== 0) return;
-      this.state.pointers.push(e);
-      if (this.state.pointers.length > 1) { this.state.isDrawing = false; this.state.isPanning = true; this.state.lastDist = this.getPointerDistance(); return; }
 
-      this.saveHistory();
-      this.state.isDrawing = true;
-      const p = this.getCanvasCoordinates(e);
+    <div id="controls">
+        <input type="file" id="pdfInput" accept=".pdf">
+        <button id="prevPageBtn">← 前へ</button>
+        <span id="pageNumber">1 / 1</span>
+        <button id="nextPageBtn">次へ →</button>
+        <button id="saveBtn">ノートを保存</button>
+        <button id="loadBtn">ノートを読み込み</button>
 
-      if (this.state.tool === 'pan') { this.state.isPanning = true; this.state.lastPanPoint = p; return; }
-      if (this.state.tool === 'text') { this.addTextNode(p); return; }
+        <button class="icon-btn" id="markerToolBtn" data-tool="marker">
+            <img src="./icons/marker_icon.png" alt="マーカー" class="tool-icon">
+        </button>
+        <button class="icon-btn" id="moveToolBtn" data-tool="move">
+            <img src="./icons/move_icon.png" alt="移動" class="tool-icon">
+        </button>
+        <button class="icon-btn" id="undoBtn">
+            <img src="./icons/undo_icon.png" alt="元に戻す" class="tool-icon">
+        </button>
+        <button class="icon-btn" id="redoBtn">
+            <img src="./icons/redo_icon.png" alt="やり直し" class="tool-icon">
+        </button>
+        <button class="icon-btn" id="toggleSettingsBtn">
+            <img src="./icons/panel_open_icon.png" alt="設定を開く/閉じる" class="tool-icon" id="settingsToggleIcon">
+        </button>
+    </div>
 
-      this.prepareContext();
-      this.dom.ctx.beginPath();
-      this.dom.ctx.moveTo(p.x, p.y);
-    },
-    
-    onPointerMove(e) {
-      if (this.state.pointers.length === 0) return;
-      const pointerIndex = this.state.pointers.findIndex(p => p.pointerId === e.pointerId);
-      if (pointerIndex < 0) return; this.state.pointers[pointerIndex] = e;
-      
-      if (this.state.pointers.length > 1) {
-        const dist = this.getPointerDistance();
-        if (this.state.lastDist > 0) this.zoomAt(this.getPointerCenter().x, this.getPointerCenter().y, dist / this.state.lastDist);
-        this.state.lastDist = dist;
-      } else if (this.state.isDrawing || this.state.isPanning) {
-        const p = this.getCanvasCoordinates(e);
-        if (this.state.isPanning) {
-          this.state.pan.x += p.x - this.state.lastPanPoint.x;
-          this.state.pan.y += p.y - this.state.lastPanPoint.y;
-          this.applyViewport();
-        } else if (this.state.isDrawing) {
-          this.dom.ctx.lineTo(p.x, p.y);
-          this.dom.ctx.stroke();
-        }
-      }
-    },
-    
-    onPointerUp(e) {
-      this.state.pointers = this.state.pointers.filter(p => p.pointerId !== e.pointerId);
-      if (this.state.isDrawing) this.dom.ctx.closePath();
-      if (this.state.pointers.length === 0) { this.state.isDrawing = false; this.state.isPanning = false; }
-      else if (this.state.pointers.length < 2) { this.state.isPanning = false; this.state.lastDist = 0; }
-    },
-    
-    getPointerDistance() { const [p1, p2] = this.state.pointers; return Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY); },
-    getPointerCenter() { const [p1, p2] = this.state.pointers; return { x: (p1.clientX + p2.clientX) / 2, y: (p1.clientY + p2.clientY) / 2 }; },
-    
-    zoomAt(clientX, clientY, zoomFactor) {
-        const newZoom = Math.max(0.1, Math.min(10, this.state.zoom * zoomFactor));
-        const worldPos = this.getCanvasCoordinates({clientX, clientY});
-        
-        this.state.pan.x = (clientX - this.dom.canvas.getBoundingClientRect().left) - worldPos.x * newZoom;
-        this.state.pan.y = (clientY - this.dom.canvas.getBoundingClientRect().top) - worldPos.y * newZoom;
-        this.state.zoom = newZoom;
-        
-        this.applyViewport();
-        this.redrawHistory();
-    },
-    
-    prepareContext() {
-      const ctx = this.dom.ctx; const s = this.getCurrentSettings();
-      ctx.strokeStyle = s.color || '#f0f0f0'; ctx.lineWidth = s.size;
-      ctx.lineCap = s.lineCap || 'round'; ctx.lineJoin = 'round';
-      ctx.globalAlpha = s.opacity || 1;
-      ctx.globalCompositeOperation = this.state.tool === 'eraser' ? 'destination-out' : 'source-over';
-    },
+    <script>
+        // JavaScriptコードの開始
+        document.addEventListener('DOMContentLoaded', () => {
+            const markerToolBtn = document.getElementById('markerToolBtn');
+            const moveToolBtn = document.getElementById('moveToolBtn');
+            const undoBtn = document.getElementById('undoBtn'); // Undoボタンの追加
+            const redoBtn = document.getElementById('redoBtn'); // Redoボタン
+            const toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
+            const settingsToggleIcon = document.getElementById('settingsToggleIcon');
 
-    getCurrentSettings() { return this.state.settings[this.state.tool] || {}; },
-    saveHistory(clearRedo = true) { const { width, height } = this.dom.canvas; if (width > 0 && height > 0) { this.state.history.push(this.dom.ctx.getImageData(0, 0, width, height)); if (this.state.history.length > 50) this.state.history.shift(); if (clearRedo) this.state.redoStack = []; } },
-    redrawHistory() {
-      const lastState = this.state.history.at(-1);
-      const ctx = this.dom.ctx; const { width, height } = this.dom.canvas;
-      ctx.clearRect(0, 0, width, height);
-      if (lastState) ctx.putImageData(lastState, 0, 0);
-    },
-    undo() { if (this.state.history.length === 0) return; const { width, height } = this.dom.canvas; this.state.redoStack.push(this.dom.ctx.getImageData(0, 0, width, height)); const prevState = this.state.history.pop(); const ctx = this.dom.ctx; ctx.clearRect(0,0,width,height); if (prevState) ctx.putImageData(prevState, 0, 0); },
-    redo() { if (this.state.redoStack.length === 0) return; const nextState = this.state.redoStack.pop(); if (nextState) { this.saveHistory(false); this.dom.ctx.putImageData(nextState, 0, 0); } },
-    addTextNode(point) { const node = document.createElement('div'); node.className = 'text-node'; node.contentEditable = 'true'; node.textContent = 'テキスト'; node.style.left = `${point.x}px`; node.style.top = `${point.y}px`; this.dom.textLayer.appendChild(node); window.getSelection().selectAllChildren(node); this.setActiveTool('pan'); },
-  };
-  document.addEventListener('DOMContentLoaded', () => app.init());
-</script>
+            // ツール選択の状態管理
+            let activeTool = null; // 現在選択されているツール
+
+            function setActiveTool(toolId) {
+                // すべてのアイコンボタンからactive-iconクラスを削除
+                document.querySelectorAll('.icon-btn').forEach(btn => {
+                    btn.classList.remove('active-icon');
+                });
+
+                // 新しいアクティブツールにactive-iconクラスを追加
+                if (toolId) {
+                    const selectedBtn = document.getElementById(toolId);
+                    if (selectedBtn) {
+                        selectedBtn.classList.add('active-icon');
+                        activeTool = selectedBtn.dataset.tool; // data-tool属性からツール名を取得
+                        console.log(`Active Tool: ${activeTool}`); // 開発者向けログ
+                        // ここで実際の描画ツール（マーカー、移動など）のロジックを切り替える
+                    }
+                } else {
+                    activeTool = null;
+                }
+            }
+
+            // 初期状態ではマーカーツールをアクティブにする
+            setActiveTool('markerToolBtn');
+
+            // イベントリスナーの追加
+            markerToolBtn.addEventListener('click', () => setActiveTool('markerToolBtn'));
+            moveToolBtn.addEventListener('click', () => setActiveTool('moveToolBtn'));
+            undoBtn.addEventListener('click', () => {
+                console.log('Undo button clicked');
+                // ここに元に戻す（Undo）のロジックを実装
+            });
+            redoBtn.addEventListener('click', () => {
+                console.log('Redo button clicked');
+                // ここにやり直し（Redo）のロジックを実装
+            });
+
+            // 設定パネル開閉ボタンのロジック
+            let isSettingsPanelOpen = false; // 設定パネルが開いているかの状態
+
+            toggleSettingsBtn.addEventListener('click', () => {
+                isSettingsPanelOpen = !isSettingsPanelOpen; // 状態を反転
+                if (isSettingsPanelOpen) {
+                    settingsToggleIcon.src = './icons/panel_close_icon.png';
+                    settingsToggleIcon.alt = '設定を閉じる';
+                    toggleSettingsBtn.classList.add('active-icon'); // 開いているときは光る
+                    console.log('Settings Panel: Open');
+                    // ここに設定パネルを開くロジックを実装
+                } else {
+                    settingsToggleIcon.src = './icons/panel_open_icon.png';
+                    settingsToggleIcon.alt = '設定を開く';
+                    toggleSettingsBtn.classList.remove('active-icon'); // 閉じているときは光らない
+                    console.log('Settings Panel: Closed');
+                    // ここに設定パネルを閉じるロジックを実装
+                }
+            });
+
+            // 以降、PDF.jsとCanvas描画のロジックが続く
+            // 現在はまだここに具体的なPDF.jsやCanvasの描画処理はありませんが、
+            // 今後のステップで追加していきます。
+        });
+        // JavaScriptコードの終了
+    </script>
 </body>
 </html>
